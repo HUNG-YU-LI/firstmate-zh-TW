@@ -1,26 +1,49 @@
 {
   "rules": [
     {
-      "when": "The task depends on fresh news, current events, live public facts, or recent market and product changes.",
-      "use": { "harness": "grok" },
-      "why": "Grok is the preferred dispatch when current web-connected context is central to the work."
+      "when": "任務需要最新新聞、時事、即時公開資訊，或近期市場與產品變動。",
+      "use": {
+        "harness": "grok"
+      },
+      "why": "當工作核心仰賴即時網路資訊時，優先派給 Grok。"
     },
     {
-      "when": "The task is a trivial mechanical edit such as a rote rename, formatting sweep, targeted typo fix, or simple file gathering.",
-      "use": { "harness": "claude", "model": "haiku", "effort": "low" },
-      "why": "Use the cheapest fast profile when the task is narrow and low ambiguity."
+      "when": "任務只是簡單機械式修改，例如固定規則重新命名、統一格式、修正特定錯字，或單純收集檔案。",
+      "use": {
+        "harness": "claude",
+        "model": "haiku",
+        "effort": "low"
+      },
+      "why": "任務範圍小且歧義低時，使用成本最低的快速設定檔。"
     },
     {
-      "when": "The task is a big or ambiguous multi-file feature, a risky refactor, or work that requires holding many moving parts in mind.",
+      "when": "任務是大型或需求不明確的跨檔案功能、高風險重構，或需要同時掌握許多相互影響部分的工作。",
       "use": [
-        { "harness": "claude", "model": "claude-sonnet-5", "effort": "high" },
-        { "harness": "codex", "model": "gpt-5.5", "effort": "high" }
+        {
+          "harness": "claude",
+          "model": "claude-sonnet-5",
+          "effort": "high"
+        },
+        {
+          "harness": "codex",
+          "model": "gpt-5.5",
+          "effort": "high"
+        }
       ],
-      "why": "Use a strong coding profile for big, ambiguous work; resolve the alternatives through quota-array-dispatch."
+      "why": "大型且有歧義的工作使用能力較強的程式開發設定檔；透過 quota-array-dispatch 決定候選項目。"
     }
   ],
   "default": [
-    { "harness": "codex", "model": "gpt-5.5", "effort": "medium" },
-    { "harness": "pi", "model": "anthropic/claude-sonnet-5", "effort": "medium", "provider": "claude" }
+    {
+      "harness": "codex",
+      "model": "gpt-5.5",
+      "effort": "medium"
+    },
+    {
+      "harness": "pi",
+      "model": "anthropic/claude-sonnet-5",
+      "effort": "medium",
+      "provider": "claude"
+    }
   ]
 }

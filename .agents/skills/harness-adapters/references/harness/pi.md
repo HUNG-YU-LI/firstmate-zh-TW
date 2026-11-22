@@ -1,63 +1,67 @@
-# Pi and Pi-signed
+<a id="pi-and-pi-signed"></a>
+# Pi 與 Pi-signed
 
-The combined contract is genuine: Pi and the signed wrapper expose the same verified CLI and TUI behavior.
-Verified on 2026-07-27 with Pi and Pi-signed 0.82.0 unless a fact gives another version.
+這份共用契約有實際依據：Pi 與簽章包裝器提供相同、已驗證的 CLI 與 TUI 行為。
+除個別事實註明其他版本外，於 2026-07-27 使用 Pi 與 Pi-signed 0.82.0 驗證。
 
-## Operating facts
+<a id="operating-facts"></a>
+## 操作事實
 
-| Fact | Value |
+| 項目 | 值 |
 |---|---|
-| Busy state | The Firstmate-owned extension's `agent_start` marks busy and `agent_settled`, confirmed by `ctx.isIdle()`, marks idle; this covers retries, compaction, tool loops, and queued continuations. |
-| Exit command | `/quit`. |
-| Resume | `--session <path-or-id>` resumes that exact session, and creates it at that path when the file is gone. `../../../bin/fm-spawn.sh` passes it on a relaunch so a Herdr pane's already-bound status authority keeps applying (`../../../bin/fm-control-lib.sh`'s `fm_control_relaunch_resume_flag`; `../../../docs/herdr-backend.md` "Agent status authority and relaunch"). There is still no `resume` control verb. |
-| Interrupt | Single Escape. |
-| Skill invocation | No separate verified form beyond normal command behavior; use natural language when the exact command is uncertain. |
-| Model flag | `--model <model>`; under a home's worker account pin the model must be `<provider>/<id>` and Firstmate also passes `--provider <provider>` (`../../../docs/configuration.md` "Worker account pin"). |
-| Effort flag | `--thinking <low\|medium\|high\|xhigh\|max>`; both identities expose the same levels and completed the same model-qualified max-thinking smoke. |
-| Model discovery | Run the selected executable as `<executable> --list-models [search]`; Pi's installed `docs/models.md` owns how built-in, extension-registered, and custom provider/model entries reach that list. |
+| 忙碌狀態 | Firstmate 管理的擴充功能以 `agent_start` 標記 busy，以 `ctx.isIdle()` 確認的 `agent_settled` 標記 idle；涵蓋重試、上下文壓縮、工具迴圈與排隊接續。 |
+| 結束指令 | `/quit`。 |
+| 恢復 | `--session <path-or-id>` 恢復精確指定的工作階段，檔案不存在時則在該路徑建立。`../../../bin/fm-spawn.sh` 重新啟動時傳入，讓 Herdr 窗格已綁定的狀態權威持續適用（`../../../bin/fm-control-lib.sh` 的 `fm_control_relaunch_resume_flag`；`../../../docs/herdr-backend.md` 的「Agent status authority and relaunch」）。仍沒有 `resume` 控制動詞。 |
+| 中斷 | 一次 Escape。 |
+| 技能呼叫 | 除一般指令行為外，沒有另行驗證的形式；精確指令不確定時，使用自然語言。 |
+| 模型旗標 | `--model <model>`；home 固定工作 Agent 帳號時，模型必須是 `<provider>/<id>`，Firstmate 也會傳入 `--provider <provider>`（`../../../docs/configuration.md` 的「Worker account pin」）。 |
+| 推理強度旗標 | `--thinking <low\|medium\|high\|xhigh\|max>`；兩種身分提供相同層級，並完成相同、以模型為條件的 max-thinking smoke 驗證。 |
+| 模型探索 | 以 `<executable> --list-models [search]` 執行選定執行檔；內建、擴充功能登錄與自訂供應商／模型項目如何進入清單，以 Pi 已安裝的 `docs/models.md` 為準。 |
 
-Native Codex sessions may request `ultra` through the native extension flag described by `../../../bin/fm-spawn.sh`; it is separate from Pi's thinking levels.
-Pi has no permission system, so workers are always autonomous.
-Fullscreen can bury steering messages by rewriting scrollback, so Firstmate avoids it when the installed CLI supports the override.
-`../../../bin/fm-spawn.sh --help` owns the executable-pinning and version-safe launch mechanics.
+原生 Codex 工作階段可透過 `../../../bin/fm-spawn.sh` 說明的原生擴充旗標要求 `ultra`；它與 Pi 思考層級分開。
+Pi 沒有權限系統，因此工作 Agent 一律自主執行。
+全螢幕模式會重寫回捲紀錄，可能埋沒指導訊息，因此已安裝 CLI 支援覆寫時，Firstmate 會避免全螢幕。
+執行檔固定與版本安全啟動機制，以 `../../../bin/fm-spawn.sh --help` 為準。
 
-Pi-signed is the signed wrapper identity verified on version 0.82.0.
-Firstmate records `pi-signed` without normalization and refuses rather than falling back to `pi` when that wrapper is unavailable.
-The observed signed process tree has an exact `pi-signed` wrapper parent with the Pi application as its child, while tmux reports the foreground command as the exact `pi-launcher` name for either selected executable.
-The installed plain `pi` command also execs that signed launcher.
-The router's Detection section owns how launch markers and ancestry select between the identities.
+Pi-signed 是在 0.82.0 驗證的簽章包裝器身分。
+Firstmate 原樣記錄 `pi-signed`，不正規化；包裝器不可用時拒絕，不退回 `pi`。
+觀察到的簽章程序樹，父程序是精確 `pi-signed` 包裝器，Pi 應用程式是子程序；而 tmux 對兩種選定執行檔，都回報精確的前景指令名稱 `pi-launcher`。
+已安裝的一般 `pi` 指令，也會 exec 該簽章啟動器。
+啟動標記與祖先鏈如何選擇身分，以路由器的偵測區段為準。
 
-Keep the instructions as one positional argument.
-Multiple positional arguments become separate queued messages; the spawn template already preserves the one-argument shape.
+指示保持為單一位置參數。
+多個位置參數會變成分開排隊的訊息；啟動範本已保留單參數形式。
 
-A project trust dialog can appear on the first Pi run in any not-yet-trusted directory that holds a trust-requiring resource such as `.pi/extensions/`, including a clean worktree and a freshly seeded secondmate home.
-Accept it with Enter and verify the instructions begin processing.
-The decision persists per path in `~/.pi/agent/trust.json`, or in the pinned root's `trust.json` under a worker account pin, so later spawns in the same pooled slot under that root skip it.
-For unattended seeded-secondmate launches, `../../../bin/fm-spawn.sh --help` owns the capability-gated project-trust approval mechanics; [runtime verification](../../../../../docs/verification/runtime-backends.md#pi-seeded-secondmate-project-trust) owns the regression evidence.
+任何尚未信任、且含 `.pi/extensions/` 等需要信任資源的目錄，首次執行 Pi 都可能出現專案信任對話框，包括乾淨 worktree 與剛植入初始內容的二副 home。
+按 Enter 接受，並確認指示開始處理。
+決策按路徑保存於 `~/.pi/agent/trust.json`；固定工作 Agent 帳號時，則保存在固定根目錄的 `trust.json`，因此同一根目錄下相同池化槽位的後續啟動會略過。
+無人值守、已植入初始內容的二副啟動，其依能力開啟的專案信任核准機制，以 `../../../bin/fm-spawn.sh --help` 為準；回歸證據以[執行階段驗證](../../../../../docs/verification/runtime-backends.md#pi-seeded-secondmate-project-trust) 為準。
 
-## Worker turn-end extension
+<a id="worker-turn-end-extension"></a>
+## 工作 Agent 回合結束擴充功能
 
-`../../../bin/fm-spawn.sh` keeps the worker turn-end extension in `state/`, outside the worktree, because project-local extension files worsen the trust gate and pollute the project.
-The extension listens for Pi's `turn_end` event, not `agent_end`, so supervision is notified after each completed turn rather than only when the whole run exits.
-Native-harness progress uses the separate generation-bound marker owned by `../../../bin/fm-busy-event.sh`; it never fabricates Pi turn completion.
-Optional foreground model-stream observation is version-gated separately; `../../../docs/configuration.md` (Environment variables) owns activation and `../../../docs/verification/runtime-backends.md` (Pi worker model-stream observation) owns the real-Pi evidence.
-Pi sets `PI_CODING_AGENT=true` for its children as its harness-detection marker.
+`../../../bin/fm-spawn.sh` 將工作 Agent 回合結束擴充功能放在 worktree 外的 `state/`，因為專案本機擴充檔會加重信任關卡，並污染專案。
+擴充功能監聽 Pi 的 `turn_end` 事件，不是 `agent_end`，因此每次完成回合後就通知監督，不必等整次執行退出。
+原生執行環境進度使用由 `../../../bin/fm-busy-event.sh` 負責、另外綁定世代的標記；絕不捏造 Pi 回合完成。
+可選的前景模型串流觀察，另有版本關卡；啟用方式以 `../../../docs/configuration.md`（Environment variables）為準，真實 Pi 證據以 `../../../docs/verification/runtime-backends.md`（Pi worker model-stream observation）為準。
+Pi 會替子程序設定 `PI_CODING_AGENT=true`，作為執行環境偵測標記。
 
-## Primary integration
+<a id="primary-integration"></a>
+## 主要工作階段整合
 
-The primary turn-end behavior was verified on 2026-07-09 with Pi 0.80.5.
-`.pi/extensions/fm-primary-turnend-guard.ts` listens for logical-run `agent_settled`, not per-tool-loop `turn_end`, and uses `pi.sendUserMessage(..., { deliverAs: "followUp" })` to force one guarded follow-up when `../../../bin/fm-turnend-guard.sh` returns 2.
-Without `deliverAs: "followUp"`, Pi rejects the send while the agent is still processing.
-On native Windows, the extension runs its session-start, both PreToolUse, turn-end, and operational-input Bash helpers through `bash`; macOS and Linux invoke those helpers directly.
+主要回合結束行為，於 2026-07-09 使用 Pi 0.80.5 驗證。
+`.pi/extensions/fm-primary-turnend-guard.ts` 監聽邏輯執行的 `agent_settled`，不是每次工具迴圈的 `turn_end`；`../../../bin/fm-turnend-guard.sh` 回傳 2 時，以 `pi.sendUserMessage(..., { deliverAs: "followUp" })` 強制加入一次受防護接續。
+沒有 `deliverAs: "followUp"`，Pi 會在 Agent 仍處理時拒絕傳送。
+原生 Windows 上，擴充功能透過 `bash` 執行工作階段啟動、兩個 PreToolUse、回合結束與操作輸入 Bash 輔助工具；macOS 與 Linux 則直接執行。
 
-The primary watcher protocol also requires `.pi/extensions/fm-primary-pi-watch.ts`.
-The Pi engine auto-discovers both tracked project-local extensions once the project is trusted.
-The model arms through the `fm_watch_arm_pi` tool, never through a foreground shell arm.
-Native-harness adapters can discover the same guarded FirstMate tools and operational message allowlist through the public Pi event-bus contract in `.pi/extensions/lib/fm-native-contract.ts`; no Pi built-in tools cross that contract.
-The tool result and clean-exit fallback are owned by `../../../docs/supervision-protocols/pi.md`.
-`../../../bin/fm-session-start.sh` reports when the live Pi-family session has not loaded both extensions and points at the selected executable after project trust as the fix, with `-e` as a trust-free fallback.
+主要監看協定也需要 `.pi/extensions/fm-primary-pi-watch.ts`。
+專案獲得信任後，Pi 引擎會自動探索這兩個納入版本控制的專案本機擴充功能。
+模型透過 `fm_watch_arm_pi` 工具啟用監看，絕不以前景 Shell 啟用。
+原生執行環境介接器可透過 `.pi/extensions/lib/fm-native-contract.ts` 的公開 Pi 事件匯流排契約，探索相同受防護 FirstMate 工具與操作訊息允許清單；沒有 Pi 內建工具跨越此契約。
+工具結果與乾淨結束替代路徑，以 `../../../docs/supervision-protocols/pi.md` 為準。
+活躍 Pi 家族工作階段未同時載入兩個擴充功能時，`../../../bin/fm-session-start.sh` 會回報，並指出完成專案信任後使用選定執行檔的修正方式，另提供免信任的 `-e` 替代路徑。
 
-When a secondmate is launched on Pi or Pi-signed, `../../../bin/fm-spawn.sh --secondmate` launches the selected executable with `-e .pi/extensions/fm-primary-turnend-guard.ts`, `-e .pi/extensions/fm-primary-pi-watch.ts`, and `-e` of the parent home's `state/<id>.pi-ext.ts` busy extension.
-Both primary files already exist in the secondmate home's git worktree.
-The busy extension lives outside that home, so Pi's project-trust gate does not see it, and its turn-end handler does not touch the parent's turn-ended marker.
-The PreToolUse-equivalent watcher-arm seatbelt returns `{block: true}` from the `tool_call` event.
+二副使用 Pi 或 Pi-signed 啟動時，`../../../bin/fm-spawn.sh --secondmate` 會以選定執行檔搭配 `-e .pi/extensions/fm-primary-turnend-guard.ts`、`-e .pi/extensions/fm-primary-pi-watch.ts`，以及父 home 的 `state/<id>.pi-ext.ts` busy 擴充功能之 `-e` 啟動。
+兩個主要檔案已存在於二副 home 的 Git worktree。
+Busy 擴充功能位於 home 之外，因此 Pi 專案信任關卡看不到它，其回合結束處理器也不碰父層 turn-ended 標記。
+相當於 PreToolUse 的監看啟用防護，從 `tool_call` 事件回傳 `{block: true}`。

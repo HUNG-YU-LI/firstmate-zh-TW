@@ -1,6 +1,6 @@
 ---
 name: firstmate-self-repo
-description: Load before dispatching, promoting, relaunching, or delivering any task whose project is the firstmate repository itself, when a firstmate bug or improvement idea surfaces in ordinary use, before granting or revoking upstream publication authority, and before deciding whether any push, pull request, issue, comment, or fork may reach firstmate's own upstream.
+description: 派發、提升、重新啟動或交付目標為 firstmate 儲存庫本身的工作前，一般使用中出現 firstmate 問題或改善想法時，授予或撤銷上游發布權限前，以及判斷任何推送、pull request、Issue、留言或 fork 是否能送達 firstmate 自身上游前載入。
 user-invocable: false
 metadata:
   internal: true
@@ -8,64 +8,72 @@ metadata:
 
 # firstmate-self-repo
 
-Every firstmate home clones the same public repository and runs from it, which makes firstmate's own upstream the one repository a running home can always reach.
-Most homes belong to people who simply use firstmate, not to the people who maintain it, and a running agent that treats "I can see the repo" as "I may publish to it" is how a user's firstmate opens surprise pull requests upstream.
-This skill owns the boundary between the two relationships.
+每個 firstmate home 都複製同一個公開儲存庫並從中執行，因此 firstmate 自身上游，是執行中的 home 一定能存取的儲存庫。
+多數 home 屬於單純使用 firstmate 的人，而非維護者；執行中的 Agent 若把「我看得到儲存庫」當成「我可以發布到它」，就會讓使用者的 firstmate 意外向上游開 PR。
+本技能負責區分這兩種關係的邊界。
 
-## The default: user/operator
+<a id="the-default-useroperator"></a>
+## 預設：使用者／操作者
 
-Absent any explicit grant, a home runs as firstmate **user/operator**.
-It may install, run, update, reconfigure, and locally repair firstmate, and its ordinary project work flows through the registered delivery modes unchanged.
-What it may never do on its own is publish to firstmate's upstream: no pushed branch, no pull request, no issue, no comment, no fork, no review.
+沒有明確授權時，home 以 firstmate **使用者／操作者**身分執行。
+它可以安裝、執行、更新、重新設定及在本機修復 firstmate，一般專案工作也照原本登錄的交付模式進行。
+它絕不能自行向 firstmate 上游發布：不得推送分支、建立 pull request、開 Issue、留言、fork 或提交審查。
 
-Role is **never inferred**.
-GitHub identity, forge permissions, the name or URL of `origin` or any other remote, repository ownership, authentication state, environment variables, and CI context all say nothing about role; the only inputs are the explicit local grants below.
+角色**絕不依推測**。
+GitHub 身分、託管平台權限、`origin` 或任何 remote 的名稱與 URL、儲存庫所有權、驗證狀態、環境變數與 CI 上下文，都不能說明角色；唯一輸入是下列明確本機授權。
 
-## When a firstmate bug surfaces in ordinary use
+<a id="when-a-firstmate-bug-surfaces-in-ordinary-use"></a>
+## 一般使用中發現 firstmate 問題
 
-A user/operator home that hits a firstmate bug does local work only:
+使用者／操作者 home 遇到 firstmate 問題，只做本機工作：
 
-1. Diagnose privately - reproduce, isolate, and root-cause inside the home and its task records.
-2. Apply a local workaround when one exists - a config change, a pinned local edit, a different invocation.
-3. Optionally prepare a sanitized local issue draft or a proposed local patch under the task's data directory, for the operator to review and submit by hand.
-4. Report to the captain what happened and what was produced.
+1. 私下診斷：在 home 與其工作紀錄內重現、隔離並找出根因。
+2. 有替代方案時，在本機套用，例如修改設定、固定本機編輯，或使用不同呼叫方式。
+3. 可選擇在工作資料目錄下準備去除敏感資訊的本機 Issue 草稿，或提出本機修補，供操作者審查並手動提交。
+4. 向船長回報發生什麼，以及產出了什麼。
 
-A local patch or workaround may touch the gitignored operational surface and a task's own worktree; nothing reaches upstream without the authority below.
-This posture covers firstmate self-repair exactly the same way it covers a dispatched task: the boundary is about publication, not about which surface holds the fix.
+本機修補或替代方案可碰觸列入 gitignore 的操作內容與該工作自己的 worktree；未取得下述授權，任何內容都不得到達上游。
+此模式對 firstmate 自我修復與派發工作一視同仁：邊界在於發布，不在於修補存放在哪個位置。
 
-## The two explicit grants
+<a id="the-two-explicit-grants"></a>
+## 兩種明確授權
 
-### Maintainer opt-in (standing)
+<a id="maintainer-opt-in-standing"></a>
+### 維護者啟用（持續有效）
 
-Only the operator may opt the primary home in; follow the [Firstmate role schema and resolution policy](../../../docs/configuration.md#firstmate-role-configfirstmate-role), rather than creating a grant on the operator's behalf.
+只有操作者能將主要 home 設為啟用；遵循 [Firstmate 角色結構與解析政策](../../../docs/configuration.md#firstmate-role-configfirstmate-role)，不要代操作者建立授權。
 
-### One-task contribution consent (bounded)
+<a id="one-task-contribution-consent-bounded"></a>
+### 單次工作貢獻同意（有界）
 
-When the captain explicitly approves one specific upstream contribution, record it on that task only: `--upstream-consent <host>/<owner>/<repo>` on `bin/fm-brief.sh`, `bin/fm-spawn.sh`, and `bin/fm-promote.sh`.
-Consent renders as an `upstream-consent=` token on the brief's `Delivery contract:` line, is recorded in `state/<id>.meta`, and a relaunch reuses the recorded value.
-It changes the home's persistent role in no way; the next task is gated fresh.
-The captain's approval must be a current explicit instruction naming the contribution - never an inference from the task resembling maintainer work.
+船長明確核准一項特定上游貢獻時，只記錄在該工作：將 `--upstream-consent <host>/<owner>/<repo>` 傳入 `bin/fm-brief.sh`、`bin/fm-spawn.sh` 與 `bin/fm-promote.sh`。
+同意會呈現在簡報 `Delivery contract:` 行的 `upstream-consent=` 代碼中，記錄於 `state/<id>.meta`；重新啟動沿用已記錄值。
+它完全不改變 home 的持久角色；下一項工作重新套用關卡。
+船長核准必須是當前、明確點名該貢獻的指示，絕不能因工作看起來像維護工作就推定。
 
-## Where the boundary is enforced
+<a id="where-the-boundary-is-enforced"></a>
+## 邊界的執行位置
 
-The gate is code, not memory: `bin/fm-role-lib.sh`'s `fm_role_gate_self_publish` applies the [lineage and publication-target policy](../../../docs/configuration.md#firstmate-role-configfirstmate-role) to publishing contracts.
+關卡由程式碼執行，不靠記憶：`bin/fm-role-lib.sh` 的 `fm_role_gate_self_publish`，對發布契約套用[儲存庫血緣與發布目標政策](../../../docs/configuration.md#firstmate-role-configfirstmate-role)。
 
-- `bin/fm-brief.sh --project <dir>` refuses to scaffold a publishing ship brief the home cannot authorize.
-- `bin/fm-spawn.sh` refuses to launch a ship task on this repository without a maintainer scope or matching task consent, and refuses a brief whose `upstream-consent=` disagrees with the flag.
-- `bin/fm-promote.sh` applies the same gate to scout promotion so the in-place path grants no more than a fresh spawn.
-- `local-only` publishes nothing, so it never needs authority and never takes consent.
+- `bin/fm-brief.sh --project <dir>` 會拒絕產生 home 無權授權的發布型 ship 簡報。
+- `bin/fm-spawn.sh` 在沒有維護者範圍或相符工作同意時，拒絕在此儲存庫啟動 ship；也會拒絕簡報 `upstream-consent=` 與旗標不一致的情況。
+- `bin/fm-promote.sh` 對 scout 提升套用相同關卡，確保原位提升不比全新啟動多取得權限。
+- `local-only` 不發布任何內容，因此不需要發布授權，也不接受貢獻同意。
 
-An authorized contribution then flows through the task's normal delivery contract - usually no-mistakes - like any other project; the grant answers only "may this publish", never "how".
+已授權貢獻接著和其他專案一樣，走該工作的一般交付契約，通常是 no-mistakes；授權只回答「能否發布」，不回答「如何發布」。
 
-A gate refusal names the exact remedy: write `maintainer <scope>` into `config/firstmate-role`, or pass `--upstream-consent <scope>` for that one task with the captain's explicit approval.
-Never work around a refusal by pointing the task at a second checkout, fork, or parent clone; `fm_role_self_repo` treats every repository sharing firstmate's lineage as firstmate's own.
+關卡拒絕會指出精確補救：在 `config/firstmate-role` 寫入 `maintainer <scope>`，或取得船長明確核准後，只對該工作傳入 `--upstream-consent <scope>`。
+絕不把工作改指向第二份 checkout、fork 或上游 clone 來繞過拒絕；`fm_role_self_repo` 將與 firstmate 同血緣的所有儲存庫都視為 firstmate 自身。
 
-## Updating is not contributing
+<a id="updating-is-not-contributing"></a>
+## 更新不等於貢獻
 
-`/updatefirstmate` and every guarded sync pull **from** upstream, which is consumption, not publication, and stays allowed for every role.
-The boundary covers only traffic that writes to the upstream repository.
+`/updatefirstmate` 與每個受防護同步，都是**從**上游拉取，屬於使用而非發布，所有角色都仍可執行。
+這道邊界只涵蓋寫入上游儲存庫的流量。
 
-## Secondmates
+<a id="secondmates"></a>
+## 二副
 
-Follow the [role inheritance and receipt limits](../../../docs/configuration.md#firstmate-role-configfirstmate-role); supported propagation must never grant a child a role the primary does not resolve.
-Deliberately forged local records are outside this accidental-publication safeguard, not a provenance guarantee.
+遵循[角色繼承與接收限制](../../../docs/configuration.md#firstmate-role-configfirstmate-role)；支援的傳遞方式，絕不授予子 home 高於主要 home 實際解析出的角色。
+刻意偽造的本機紀錄，不在這道避免意外發布的防護範圍內；它不是來源真實性保證。

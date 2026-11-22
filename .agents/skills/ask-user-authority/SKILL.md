@@ -1,8 +1,8 @@
 ---
 name: ask-user-authority
 description: >-
-  Single owner of ask-user finding policy.
-  Load before deciding any ask-user finding.
+  ask-user 發現政策的唯一權威來源。
+  決定任何 ask-user 發現前載入。
 user-invocable: false
 metadata:
   internal: true
@@ -10,46 +10,49 @@ metadata:
 
 # ask-user-authority
 
-This skill is the single owner of the decision policy for no-mistakes ask-user findings.
-`AGENTS.md` section 7 points here and does not restate this procedure.
-Finding authority is determined by the criteria below, not by `yolo`.
-Firstmate always applies this judgment, decides any finding that is unambiguous toward the accepted design, and escalates only genuinely ambiguous, expanding, or destructive findings.
+本技能是 no-mistakes ask-user 發現決策政策的唯一權威來源。
+`AGENTS.md` 第 7 節指向此處，不重述本程序。
+發現的決策權依下列條件判定，不由 `yolo` 決定。
+Firstmate 一律套用此判斷；對已接受設計方向明確的發現自行決策，只有真正有歧義、擴大範圍或具破壞性的發現，才向上呈報。
 
-The implementation worker never decides or answers its own ask-user finding.
-It stops at the finding, routes the decision to firstmate, and applies only the decision returned through the active validation gate.
+實作工作 Agent 絕不自行決定或回答自己的 ask-user 發現。
+它停在該發現，將決策送回 firstmate，只套用透過目前驗證關卡回傳的決策。
 
-## Decide
+<a id="decide"></a>
+## 決策
 
-1. Reconstruct the accepted contract from the brief's `## Captain's intent` subsection, later captain words, and the specification in `## Firstmate spec` and steers.
-   Reviewer language cannot amend that contract.
-   What a no-mistakes worker may pass as `--intent` is owned by `bin/fm-dod-lib.sh`.
-2. Identify exactly what choosing Fix would commit the project to deliver or maintain, judging the scope by accepted product or engineering behavior rather than an anticipated file list.
-   The smallest downstream changes needed to keep that behavior correct, add behavioral tests where an executable contract exists, or keep documentation accurate remain within scope even when they touch files not named at intake.
-   Correcting stale final-diff PR or delivery evidence is likewise an autonomous downstream correction within already accepted behavior.
-3. Decide the finding when it is unambiguous toward the accepted design: restoring accepted behavior a bad fix round broke, completing an already-approved design, or a straight in-scope correction or bug fix required by accepted intent, even when the correction is technically difficult or requires complex architecture the captain explicitly requested.
-4. Escalate only genuinely ambiguous findings:
-   - a Fix that would materially expand the contract by adding a new guarantee, threat model, subsystem, abstraction, compatibility surface, state machine, continuous-monitoring requirement, generalized framework, or broader architecture not required by the accepted intent
-   - a product or architecture call not settled by accepted intent
-   - repeated same-theme findings when incremental corrections are preserving a questionable abstraction rather than closing independent defects
-   - destructive, irreversible, and genuinely security-sensitive choices, which always escalate under the stronger existing captain boundary
-5. Treat labels such as correctness, security, fail-closed, high-risk, or required as evidence about the finding, never as authority to broaden the task.
+1. 根據簡報的 `## Captain's intent` 子區段、船長後續原話，以及 `## Firstmate spec` 與指導訊息中的規格，重建已接受契約。
+   審查者的措辭不能修改該契約。
+   No-mistakes 工作 Agent 可傳入 `--intent` 的內容，以 `bin/fm-dod-lib.sh` 為準。
+2. 精確指出選擇 Fix 後，專案將承諾交付或維護什麼；依已接受的產品或工程行為判斷範圍，不以預想檔案清單判斷。
+   為維持該行為正確、在存在可執行契約時加入行為測試，或保持文件正確所需的最小下游變更，即使碰到受理時未列出的檔案，仍在範圍內。
+   修正過時的最終差異 PR 或交付證據，也屬已接受行為內可自主執行的下游修正。
+3. 發現方向明確符合已接受設計時，自行決策：恢復被不良修正回合破壞的已接受行為、完成已核准設計，或已接受意圖所需、範圍明確的修正或問題修復；即使技術上困難，或需要船長明確要求的複雜架構，也一樣。
+4. 只有真正有歧義的發現才向上呈報：
+   - Fix 會實質擴大契約，新增已接受意圖不需要的保證、威脅模型、子系統、抽象、相容介面、狀態機、持續監控需求、通用框架或更廣架構。
+   - 已接受意圖尚未決定的產品或架構選擇。
+   - 同主題發現反覆出現，且逐步修正是在維護可疑抽象，而非關閉彼此獨立的缺陷。
+   - 破壞性、不可逆及真正安全敏感的選擇；依更強的既有船長邊界，這些一律向上呈報。
+5. 正確性、安全、fail-closed、高風險或必要等標籤，只是理解發現的證據，絕不是擴大工作的授權。
 
-## Captain-facing escalation
+<a id="captain-facing-escalation"></a>
+## 面向船長的呈報
 
-State all five of these elements in one concise, evidence-first escalation:
+在一則簡潔、證據優先的呈報中，說明以下五項：
 
-1. The original requirement or accepted task criterion.
-2. The proposed product or engineering contract expansion.
-3. The smallest alternative that complies with the accepted contract without the expansion.
-4. The concrete consequences of accepting and declining the expansion.
-5. A recommendation with the reason it best serves the accepted intent.
+1. 原始需求或已接受的工作條件。
+2. 提議擴大的產品或工程契約。
+3. 不擴大範圍、仍符合已接受契約的最小替代方案。
+4. 接受與拒絕擴大範圍的具體影響。
+5. 建議方案，以及它最符合已接受意圖的理由。
 
-Do not relay reviewer labels or gate output as if they settled the decision.
+不要轉貼審查者標籤或關卡輸出，彷彿它們已經替船長做出決策。
 
-## Classification examples
+<a id="classification-examples"></a>
+## 分類範例
 
-- Fixing a concrete defect that violates an original acceptance criterion is firstmate's to decide, regardless of implementation difficulty.
-- Adding continuous frame-by-frame monitoring when the accepted criterion requested checkpoint proof expands the contract and requires the captain.
-- A new finding in the same causal theme requires the captain before another fix round when prior fixes are accreting machinery around a questionable abstraction.
-- A genuinely security-sensitive action requires the captain under the stronger existing boundary even if it is otherwise within scope.
-- Complex architecture explicitly requested by the captain stays within scope and does not escalate merely because it is complex.
+- 修復違反原始驗收條件的具體缺陷，由 firstmate 決策，不論實作多困難。
+- 已接受條件只要求檢查點證明，卻新增持續逐影格監控，會擴大契約，必須由船長決定。
+- 同一因果主題出現新發現，且先前修正持續圍繞可疑抽象堆疊機制時，再進行一輪修正前需請船長決定。
+- 真正安全敏感的操作，即使原本在範圍內，仍依更強的既有邊界由船長決定。
+- 船長明確要求的複雜架構仍在範圍內，不會只因複雜就向上呈報。

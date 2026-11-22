@@ -1,48 +1,54 @@
-# External review forge (forge=external)
+<a id="external-review-forge-forgeexternal"></a>
+# 外部審查平台（forge=external）
 
-Some projects review code through a tool that uploads its own snapshot of the author's local commits, with no git push and no pull request.
-On such a project a worker never needs to push a branch, and must never push a task branch to the project's shared origin, where colleagues would see firstmate's delivery branches.
-This document is the design for that rail; `bin/fm-project-mode.sh`'s header owns the registry binding, `bin/fm-dod-lib.sh` owns what it changes for a worker, and [configuration.md](configuration.md#external-review-tool-configexternal-reviewmd-configexternal-review-url-configexternal-review-backup) owns the home configuration schema.
+有些專案透過專用工具審查程式碼；工具會自行上傳作者本機提交的快照，不進行 git push，也不建立 Pull Request。
+在這類專案中，工作 Agent 完全不需要推送分支，也絕不可將任務分支推送到專案共用的 origin，避免同事看到 Firstmate 的交付分支。
+本文件描述此流程的設計；`bin/fm-project-mode.sh` 的標頭負責登錄表綁定，`bin/fm-dod-lib.sh` 負責它對工作 Agent 帶來的行為變化，而 [configuration.md](configuration.md#external-review-tool-configexternal-reviewmd-configexternal-review-url-configexternal-review-backup) 負責主目錄設定結構。
 
-## Why it is a forge value
+<a id="why-it-is-a-forge-value"></a>
+## 為什麼將它設為 forge 值
 
-[gerrit-forge-integration.md](gerrit-forge-integration.md) section 3 defines the forge as what the publication artifact is, and therefore which tool makes it.
-Here the artifact is a review that an external tool creates from a snapshot of local commits, so the rail is a fourth value of the existing closed `forge=` binding rather than a separate axis.
-The composition test holds: `local-only` is refused because it publishes nothing, `direct-PR` validates and then uploads with the tool, and `no-mistakes` is refused for now because the pipeline's push, pr, and ci steps would push to the shared origin.
-The binding is never detected, because no protocol fact identifies a snapshot-uploading review tool; the captain's registry entry `[direct-PR forge=external]` is the whole binding.
-The tool itself is private home configuration: `config/external-review.md` holds the worker instructions for validating, uploading, reading review state, and the stopping point, and `bin/fm-dod-lib.sh` renders it verbatim into the Definition of done.
+[gerrit-forge-integration.md](gerrit-forge-integration.md) 第 3 節將 forge 定義為發布成品的類型，進而決定由哪個工具建立它。
+這裡的成品是外部工具根據本機提交快照建立的審查，因此此流程是既有封閉集合 `forge=` 綁定的第四個值，而非另一個獨立維度。
+組合檢驗仍然成立：`local-only` 因不發布任何內容而被拒絕；`direct-PR` 先驗證，再用工具上傳；`no-mistakes` 目前被拒絕，因為管線的 push、pr 與 ci 步驟會推送到共用 origin。
+此綁定永不自動偵測，因為沒有任何協定事實能識別「上傳快照的審查工具」；船長（captain）登錄表中的 `[direct-PR forge=external]` 項目就是完整綁定。
+工具本身屬於主目錄的私人設定：`config/external-review.md` 保存工作 Agent 的驗證、上傳、讀取審查狀態及停止點指示；`bin/fm-dod-lib.sh` 會將它原樣呈現於完成定義（Definition of done）。
 
-## The no-push invariant
+<a id="the-no-push-invariant"></a>
+## 禁止推送的不變條件
 
-The invariant is enforced in three layers, from strongest to weakest:
+這項不變條件由三層機制強制執行，依強度由強到弱排列：
 
-1. A per-task `pre-push` guard, `bin/fm-git-push-guard.sh`, runs from the read-only hooks directory `bin/fm-spawn.sh` installs through `bin/fm-git-strip-ai-trailers.sh install --push-guard`, even when the home keeps AI trailers.
-   It refuses any push to `origin` or to a URL matching one of origin's URLs, any push of the task branch or a task-prefixed ref to any remote, and any ref outside the backup prefix on the backup remote, then chains to the repository's own `pre-push` hook.
-2. `bin/fm-spawn.sh` refuses `--yolo on`, a missing review tool adapter, and an unusable backup remote before any endpoint exists, and records `forge=external`, `backup_remote=`, and `backup_prefix=` in the task metadata.
-3. The generated brief's first rule forbids every such push, and its Definition of done names the review tool as the only publishing path.
+1. 每個任務都有 `pre-push` 防護 `bin/fm-git-push-guard.sh`，從唯讀 hooks 目錄執行。該目錄由 `bin/fm-spawn.sh` 透過 `bin/fm-git-strip-ai-trailers.sh install --push-guard` 安裝，即使主目錄保留 AI trailers 也會安裝。
+   它拒絕任何推送到 `origin` 或與 origin 任一 URL 相符的目的地、拒絕將任務分支或帶有任務前綴的 ref 推送到任意遠端，也拒絕在備份遠端上推送不屬於備份前綴的 ref，最後再串接儲存庫自己的 `pre-push` hook。
+2. 在任何端點建立之前，`bin/fm-spawn.sh` 就會拒絕 `--yolo on`、缺少審查工具轉接器，或備份遠端無法使用的情況，並在任務中繼資料中記錄 `forge=external`、`backup_remote=` 與 `backup_prefix=`。
+3. 產生的任務簡報第一條規則會禁止上述所有推送；完成定義則指定審查工具為唯一發布路徑。
 
-The ready report is `done: review <url> uploaded for review`.
-Firstmate cannot observe, approve, or merge the review, so `bin/fm-review-check.sh` records `review=` and `review_head=` without arming a merge watch, and the review always escalates to the captain whatever the yolo setting.
-A scout launches without the guard and the task record, so `bin/fm-promote.sh` refuses to promote one onto a `forge=external` project; such work starts as a ship.
+就緒回報格式是 `done: review <url> uploaded for review`。
+Firstmate 無法觀察、核准或合併該審查，因此 `bin/fm-review-check.sh` 只記錄 `review=` 與 `review_head=`，不會啟動合併監看；無論 yolo 如何設定，審查一律升級交由船長處理。
+偵察員（scout）啟動時沒有防護機制與任務紀錄，因此 `bin/fm-promote.sh` 會拒絕將其提升為 `forge=external` 專案的交付工作；這類工作必須從一開始就以交付（ship）任務啟動。
 
-## The personal backup remote
+<a id="the-personal-backup-remote"></a>
+## 個人備份遠端
 
-A worker copy's commits live only in the copy and in the review tool's snapshot.
-`config/external-review-backup` may name a git remote, pointing at storage the captain alone controls, that holds a durable copy at `refs/heads/<backup-prefix><task-id>` (default prefix `backup/`).
-The backup prefix must be non-empty and must neither equal nor start with the task branch prefix, so a durable copy never reads as a delivery branch and the guard's task-prefix rule stays unconditional.
-Spawn refuses a backup remote the project does not have, or one whose URL matches origin's.
-Where the backup remote points is the captain's call; firstmate cannot police it, so a project whose code must not leave a network needs a backup inside that network.
+工作 Agent 副本的提交，只存在該副本與審查工具的快照中。
+`config/external-review-backup` 可指定一個 Git 遠端，指向只有船長能控制的儲存位置，並在 `refs/heads/<backup-prefix><task-id>` 保存持久副本（預設前綴為 `backup/`）。
+備份前綴不可為空，也不可等於任務分支前綴或以其開頭，確保持久副本不會被視為交付分支，且防護機制的任務前綴規則能維持無條件生效。
+若專案不存在該備份遠端，或其 URL 與 origin 相同，spawn 會拒絕執行。
+備份遠端指向何處由船長決定，Firstmate 無法代為管制；因此若專案程式碼不得離開某個網路，備份就必須位於該網路內。
 
-With a backup configured, the ready report is accepted only once HEAD is on the backup remote's namespace, and teardown's existing landed-work test sees the copy as reachable from a remote-tracking ref.
-Without one, the ready report is accepted on the review URL alone, because the snapshot lives in a tool firstmate cannot read; `review_head=` records what was uploaded.
-Teardown is unchanged either way, so without a backup it refuses cleanup until the reviewed content reaches origin's default branch, and the worker copy is retained until a human merges the review.
+設定備份後，只有 HEAD 已存在於備份遠端命名空間時，才會接受就緒回報；teardown 既有的落地工作檢查，也會將該副本視為可從遠端追蹤 ref 到達。
+若未設定備份，只憑審查 URL 就會接受就緒回報，因為快照位於 Firstmate 無法讀取的工具中；`review_head=` 會記錄上傳的是哪個提交。
+無論有無備份，teardown 的行為都不變；因此沒有備份時，在已審查內容進入 origin 預設分支之前，會拒絕清理，並保留工作 Agent 副本，直到人類合併審查。
 
-## Accepted residual
+<a id="accepted-residual"></a>
+## 接受的殘餘限制
 
-`git push --no-verify` skips every hook, a tool that writes refs without running git never reaches one, and an alias URL spelled differently from origin, such as an ssh form against an https form of the same server, does not compare equal.
-Each bypasses the guard, and the brief's first rule still forbids all three.
-No gate or cleanup step requires a push on this forge, which removes the pressure that would make a worker try one.
+`git push --no-verify` 會略過所有 hooks；不經 Git 而直接寫入 refs 的工具不會觸發 hook；與 origin 使用不同寫法的別名 URL，例如相同伺服器的 ssh 與 https 形式，也不會被判定為相等。
+這三種方式都能繞過防護，但任務簡報的第一條規則仍禁止它們。
+此 forge 的任何關卡或清理步驟都不要求推送，因此消除了工作 Agent 為完成流程而嘗試推送的壓力。
 
-## Deferred
+<a id="deferred"></a>
+## 延後處理
 
-`no-mistakes` composition, which would run the pipeline with its forge-facing steps skipped and recover custody as Gerrit does, an adapter hook that verifies the uploaded snapshot against HEAD, per-project adapters, and promotion of a scout onto this forge are follow-ups.
+後續項目包括：`no-mistakes` 組合（略過管線中面向 forge 的步驟，並像 Gerrit 一樣恢復保管責任）、驗證上傳快照是否符合 HEAD 的轉接器 hook、每個專案各自的轉接器，以及將偵察員提升到此 forge 的支援。

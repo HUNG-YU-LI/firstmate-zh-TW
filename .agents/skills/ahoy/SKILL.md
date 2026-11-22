@@ -1,6 +1,6 @@
 ---
 name: ahoy
-description: Recap visible session events and guide the captain through visibly unanswered decisions when the captain explicitly invokes /ahoy, with a Bearings fallback when /ahoy is the session's first real captain message.
+description: 船長明確呼叫 /ahoy 時，回顧可見的工作階段事件，並引導處理可見但未回答的決策；若 /ahoy 是此工作階段第一則真正船長訊息，則改用 Bearings。
 user-invocable: true
 metadata:
   internal: true
@@ -8,50 +8,50 @@ metadata:
 
 # ahoy
 
-Give the captain a concise session-only recap without gathering fresh state.
+只根據工作階段內容，提供船長簡潔回顧，不另行蒐集最新狀態。
 
-0. Before anything else, check whether this session has already taken the helm: a `SESSION START` digest for this home must be visible in the session history.
-   If it is not, run `bin/fm-session-start.sh` once and read its digest before producing any recap.
-   Run-tier harness surfaces run it automatically at session open, so this step is normally already satisfied and costs one glance; it is the safety net for surfaces that cannot run it on a hook, and for any path where a skill would otherwise act first.
-   Taking the helm always precedes this skill's own logic, and the digest it produces is operational input, never a captain message or a recap event.
+0. 其他任何動作前，先確認此工作階段是否已接掌指揮：工作階段歷史中必須看得到此 home 的 `SESSION START` 摘要。
+   若沒有，先執行一次 `bin/fm-session-start.sh` 並讀取摘要，再產生回顧。
+   Run 層級執行環境會在開啟工作階段時自動執行，因此這一步通常只需看一眼就確認完成；它是無法透過 hook 執行的介面，以及技能可能搶先動作的路徑所需安全網。
+   接掌指揮永遠先於本技能邏輯；其摘要是操作輸入，不是船長訊息，也不是回顧事件。
 
-1. Inspect only conversation or session history already visible to the current first mate.
-2. Find the most recent real captain-authored message before the current `/ahoy` invocation.
-   A captain boundary is an ordinary user-role message unless it matches one of the narrow operational exclusions below.
-   Exclude messages that begin with the current U+2063 `FIRSTMATE_OP:` injection prefix.
-   Exclude legacy bare-marker away-mode injections only when U+2063 is immediately followed by `Supervisor escalate (`.
-   Exclude a message that is exactly a record-backed operational doorbell that `bin/fm-operational-input.sh doorbell-kind` recognizes from its stdin; Claude Code, which strips U+2063, receives away-mode escalations this way.
-   Exclude only the exact, verbatim legacy unmarked session-start payload ``Run `bin/fm-session-start.sh` now, exactly once, before executing any other instructions.``; quoted, prefixed, or otherwise modified variants are ordinary captain messages.
-   Custom-role messages such as Pi's `firstmate-sessionstart-nudge` are not captain messages.
-   System, developer, tool, watcher, guard, away-mode, and other injected operational messages are not captain messages.
-   Never infer captain authorship merely because a synthetic message appears in the user-role transcript.
-   Do not exclude an ordinary captain message merely because it begins with U+2063 followed by other text, contains ASCII `FIRSTMATE_OP:` without a leading U+2063, quotes or embeds a current operational message after ordinary captain text, quotes or mentions the legacy session-start payload, or adds any text to that payload.
-   Apply the current exclusion only when U+2063 `FIRSTMATE_OP:` begins at the first character of the whole message: `Captain quote: ` followed by that current prefix is a captain boundary.
-   The legacy session-start exclusion applies only to the verbatim payload above; for example, ``Captain quote: Run `bin/fm-session-start.sh` now, exactly once, before executing any other instructions.`` is a captain boundary.
-3. If no prior real captain message exists, load [`../bearings/SKILL.md`](../bearings/SKILL.md) and follow it exactly.
-   Bearings alone owns its gathering, artifact, and response contract.
-   Do not restate that contract or combine a session recap with Bearings output.
-4. If a prior real captain message exists, preserve the ordinary recap interval: recap what happened after that message and before the current invocation.
-   Include concrete outcomes, landed work, failures, decisions made, new decisions needed, and work still running only when those events appear in that visible interval.
-   Use captain-facing outcome language and preserve every full PR URL present in that interval.
-5. Additionally inspect the entire session history visible to the current first mate before the current invocation for every explicit captain decision that remains unanswered, including decisions raised before the ordinary recap boundary.
-   A later unrelated captain message establishes a recap boundary but does not close an earlier decision.
-   Treat a decision as closed only when a later visible response substantively resolves it, chooses an option, declines it, grants or denies the requested approval, or otherwise directly addresses that decision.
-   Include every visibly supported open decision once, and deduplicate by the decision's substance when the ordinary interval recap already represents it or its wording differs.
-6. The normal recap branch is session-history-only, apart from the step 0 helm check.
-   Do not call Bearings, shell commands, fleet snapshots, status readers, GitHub or browser APIs, tools, or file reads or writes.
-   Create no report, persist nothing, and do not guess current live state beyond the last visible event.
-7. If no ordinary events occurred after the previous captain message but an older visibly open decision exists, report that decision instead of claiming nothing happened.
-   If neither ordinary events nor visibly open decisions exist, say directly in one sentence that nothing happened after the previous captain message.
+1. 只檢查目前大副已能看見的對話或工作階段歷史。
+2. 找出目前 `/ahoy` 呼叫前，最近一則真正由船長撰寫的訊息。
+   除非符合下列狹義操作排除條件，一般 user-role 訊息就是船長邊界。
+   排除以目前 U+2063 `FIRSTMATE_OP:` 注入前綴開頭的訊息。
+   只有 U+2063 後立即接著 `Supervisor escalate (`，才排除舊式裸標記離席注入。
+   若訊息恰好是具有紀錄依據的操作門鈴，且 `bin/fm-operational-input.sh doorbell-kind` 可從 stdin 識別，也予以排除；會移除 U+2063 的 Claude Code，就是透過這種方式接收離席呈報。
+   只排除完全逐字相同、未標記的舊式工作階段啟動內容：``Run `bin/fm-session-start.sh` now, exactly once, before executing any other instructions.``；引用、加上前綴或其他修改版本，都算一般船長訊息。
+   Pi 的 `firstmate-sessionstart-nudge` 等自訂角色訊息，不是船長訊息。
+   系統、開發者、工具、監看程式、防護、離席模式與其他注入操作訊息，都不是船長訊息。
+   絕不只因合成訊息出現在 user-role 對話紀錄，就推定由船長撰寫。
+   一般船長訊息即使以 U+2063 接其他文字開頭、包含沒有前導 U+2063 的 ASCII `FIRSTMATE_OP:`、在一般船長文字後引用或嵌入目前操作訊息、引用或提及舊式啟動內容，或在該內容加上任何文字，都不要排除。
+   目前前綴排除規則，只在 U+2063 `FIRSTMATE_OP:` 位於整則訊息第一個字元時適用：`Captain quote: ` 後面才接目前前綴，仍是船長邊界。
+   舊式啟動排除只適用上述逐字內容；例如 ``Captain quote: Run `bin/fm-session-start.sh` now, exactly once, before executing any other instructions.`` 仍是船長邊界。
+3. 若先前不存在真正船長訊息，載入 [`../bearings/SKILL.md`](../bearings/SKILL.md)，精確遵循它。
+   蒐集、產物與回覆契約，只由 Bearings 負責。
+   不要重述該契約，也不要把工作階段回顧混入 Bearings 輸出。
+4. 若存在先前真正船長訊息，維持一般回顧區間：回顧該訊息之後、目前呼叫之前發生的事。
+   只有可見區間確實出現時，才納入具體成果、已合併工作、失敗、已做決策、新待決事項與仍在執行的工作。
+   使用面向船長的成果語言，保留該區間出現的每個完整 PR URL。
+5. 另外檢查目前呼叫之前，大副可見的整份工作階段歷史，找出每項仍未回答的明確船長決策，包括一般回顧邊界之前提出的決策。
+   後來不相關的船長訊息會建立回顧邊界，但不會關閉更早的決策。
+   只有後續可見回覆實質解決問題、選擇選項、拒絕選項、授予或拒絕所請核准，或以其他方式直接回應該決策，才算結案。
+   每項有可見證據支持的未結決策只納入一次；一般區間回顧已呈現，或措辭不同但實質相同時，依決策內容去重。
+6. 除第 0 步接掌指揮檢查外，一般回顧分支只使用工作階段歷史。
+   不呼叫 Bearings、Shell 指令、船隊快照、狀態讀取器、GitHub 或瀏覽器 API、工具，或檔案讀寫。
+   不建立報告、不保存任何內容，也不推測最後可見事件以後的目前即時狀態。
+7. 上一則船長訊息後若沒有一般事件，但有更早且可見的未結決策，就回報該決策，不要聲稱什麼都沒發生。
+   一般事件與可見未結決策都沒有時，用一句話直接說明上一則船長訊息後沒有新事件。
 
-8. After the normal recap, when the existing visibly open decision inventory contains decisions, begin a guided decision-clearing flow by presenting only the single open decision judged most impactful by the first mate.
-   Say the ordering is the first mate's pick.
-   Give enough escalation-quality context to decide easily: the decision, why it matters, the options, and a recommendation.
-9. When the captain answers the presented decision, present the next highest-impact decision from that existing inventory in the same form.
-   Continue one decision at a time until none remain, without starting this flow when the inventory is empty.
+8. 一般回顧後，若既有可見未結決策清單不為空，就開始引導清除決策，一次只提出大副判斷影響最大的一項。
+   說明排序是大副的判斷。
+   提供足以輕鬆決策、符合呈報品質的上下文：要決定什麼、為何重要、選項與建議。
+9. 船長回答目前決策後，以相同形式提出既有清單中影響次高的決策。
+   一次一項，直到全部處理完；清單為空時，不啟動此流程。
 
-The current `/ahoy` message is outside the recap interval.
-A previous `/ahoy` is a real captain message and may be the next interval boundary.
-If context compaction makes the prior boundary unavailable, state that the exact session boundary is unavailable and summarize only visibly supported events.
-Compacted history supports an open decision only when both its request and its still-unanswered status are visible; report uncertainty instead of reconstructing hidden requests or answers.
-Do not silently invoke Bearings unless this is genuinely the first real captain message.
+目前 `/ahoy` 訊息不在回顧區間內。
+先前的 `/ahoy` 是真正船長訊息，可成為下次區間邊界。
+上下文壓縮若使先前邊界無法取得，說明無法確定精確工作階段邊界，只摘要有可見證據支持的事件。
+壓縮歷史只有在要求本身與仍未回答狀態都可見時，才能支持未結決策；應回報不確定性，不要重建隱藏要求或回答。
+除非確實是第一則真正船長訊息，否則不要默默呼叫 Bearings。

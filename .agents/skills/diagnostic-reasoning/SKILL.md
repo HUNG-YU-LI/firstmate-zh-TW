@@ -1,7 +1,7 @@
 ---
 name: diagnostic-reasoning
 description: >-
-  Load before scoping a reported bug and before acting on a diagnostic report.
+  界定回報問題的範圍前，以及依診斷報告採取行動前載入。
 user-invocable: false
 metadata:
   internal: true
@@ -9,43 +9,46 @@ metadata:
 
 # diagnostic-reasoning
 
-Use this procedure before scoping a reported bug and before acting on a diagnostic report.
-This skill is the single owner of Firstmate's bug-diagnosis reasoning procedure.
-Firstmate applies it when briefing delegated investigation and evaluating the resulting evidence, without taking over project-specific investigation itself.
+界定回報問題的範圍前，以及依診斷報告採取行動前，使用此程序。
+本技能是 Firstmate 問題診斷推理程序的唯一權威來源。
+Firstmate 在撰寫委派調查簡報與評估回傳證據時套用它，不親自接手專案專屬調查。
 
-## Establish the observed behavior
+<a id="establish-the-observed-behavior"></a>
+## 確認觀察到的行為
 
-Start from the end user's experience rather than an internal error string or an implementation hypothesis.
-Require an end-to-end reproduction aligned with the real user path whenever it is feasible and safe.
-If a faithful reproduction is not feasible, record the exact limitation and use the closest representative path without presenting it as equivalent evidence.
-Capture the expected behavior, observed behavior, setup, inputs, and repeatability before assigning a cause.
+從終端使用者的體驗出發，不要先從內部錯誤字串或實作假設出發。
+只要可行且安全，就要求沿實際使用者操作路徑完成端到端重現。
+若無法忠實重現，記錄精確限制，採用最接近的代表性路徑，但不能將它描述成等價證據。
+在歸因前，先記錄預期行為、觀察行為、環境設定、輸入與可重複性。
 
-Separate these three facts explicitly:
+明確區分以下三項事實：
 
-- The **initiating trigger** is the event, input, or transition that starts the faulty behavior.
-- The **masking condition** is the independent state, environment, timing, cache, configuration, or path difference that hides or exposes the fault.
-- The **visible symptom** is what the end user or operator can actually observe.
+- **起始觸發因素**是啟動錯誤行為的事件、輸入或轉換。
+- **遮蔽條件**是會隱藏或暴露問題、且獨立存在的狀態、環境、時序、快取、設定或路徑差異。
+- **可見症狀**是終端使用者或操作者實際能觀察到的現象。
 
-Do not collapse those facts into one label.
-A masking condition may explain why a fault appears only sometimes without being the initiating cause, and the visible symptom may be several layers downstream from both.
+不要把三者混成同一個標籤。
+遮蔽條件可能解釋問題為何偶爾才出現，但它未必是起始原因；可見症狀也可能位於兩者下游好幾層。
 
-## Test the causal explanation
+<a id="test-the-causal-explanation"></a>
+## 檢驗因果解釋
 
-Inspect the failing path and a proven path where the intended behavior is known to work.
-Compare their inputs, state transitions, dependencies, timing, and control flow to find the earliest meaningful divergence.
-Inspect relevant history, including blame, commits, migrations, and prior implementations, when it can explain why the paths diverged or which invariant was intended.
-Do not treat the most recent nearby change as causal without evidence.
+檢查失敗路徑，以及已證明預期行為可正常運作的路徑。
+比較兩者的輸入、狀態轉換、相依關係、時序與控制流程，找出最早且有意義的分歧。
+當歷史能解釋路徑為何分歧，或原本預期維持哪個不變條件時，檢查相關歷史，包括 blame、提交、遷移與先前實作。
+沒有證據時，不要把最近發生的鄰近變更當成原因。
 
-Identify the smallest counterfactual that should change the outcome if the leading explanation is true.
-Change one condition at a time where practical, and record whether the symptom appears, disappears, or remains unchanged.
-Seek disconfirming evidence deliberately: name what observation would falsify the leading explanation, run that check when feasible, and retain contradictory results instead of explaining them away.
-Compare the final explanation against the proven path and show why the proposed causal boundary accounts for both the failure and the success.
+找出最小的反事實測試：如果主要解釋成立，改變什麼條件應該讓結果不同。
+實務可行時一次只改一個條件，記錄症狀是否出現、消失或保持不變。
+刻意尋找反證：指出什麼觀察能推翻主要解釋，可行時執行該檢查，並保留矛盾結果，不要牽強解釋掉。
+將最終解釋與已證明成功的路徑比較，說明提出的因果邊界為何能同時解釋失敗與成功。
 
-## Scope and act on the result
+<a id="scope-and-act-on-the-result"></a>
+## 界定範圍並依結果行動
 
-A diagnosis brief should ask for the reproduction, trigger/mask/symptom separation, divergent and proven path comparison, relevant history, smallest counterfactual, and disconfirming evidence in the report.
-A diagnostic report should distinguish observed facts from hypotheses and state any unresolved uncertainty that could change the recommended scope.
-Before acting on the report, verify that its claimed cause explains the end-user reproduction and the proven path without relying on an untested masking condition.
-If a load-bearing element is missing, route a focused follow-up investigation instead of treating confidence or implementation detail as proof.
-A diagnosis or implementation-ready recommendation is evidence, not authorization to change code.
-Implementation still requires the captain's request or another existing lifecycle authority, and the reproduction should become the regression test when a fix is authorized.
+診斷簡報應要求報告包含：重現方式、觸發／遮蔽／症狀的區分、分歧與已證明成功路徑的比較、相關歷史、最小反事實測試，以及反證。
+診斷報告應區分觀察事實與假設，並說明任何尚未解決、可能改變建議範圍的不確定性。
+依報告採取行動前，確認其宣稱原因能解釋終端使用者重現與已證明成功的路徑，而非依賴未測試的遮蔽條件。
+若缺少支撐結論的關鍵要素，應安排聚焦的後續調查，不要把信心或實作細節當成證明。
+診斷或已可實作的建議是證據，不是修改程式碼的授權。
+實作仍需船長要求，或其他既有生命週期授權；修正獲授權後，重現情境應轉成回歸測試。

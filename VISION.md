@@ -1,78 +1,86 @@
-# Vision
+<a id="vision"></a>
+# 願景
 
-`firstmate` exists so that one person can run a crew of coding agents with the leverage of a team and the accountability of a single pair of hands.
-It aims to create an experience: a sense of peacefulness, confidence that everything is under control, and an ease of mind that nothing will fall through the cracks the moment the captain looks away.
-That experience is the experience of being a good captain who sails with a well-managed crew, with a first mate that carries out the captain's direction.
-It serves the captain: an individual operator whose ambitions outrun their attention, and it turns intent stated once into delegated, supervised, evidence-backed work across every project they care about.
-It empowers exactly one individual; collaboration between humans belongs to other systems.
-It owns exactly one thing: the layer between the captain's intent and the agents that carry it out.
+`firstmate` 的存在，是為了讓一個人能指揮一支程式開發 Agent 團隊，發揮整個團隊的能力，同時維持單一負責人的明確責任。
+它希望帶來一種體驗：平靜、確信一切都在掌握之中，以及船長一轉移注意力，也不必擔心事情遭到遺漏的安心感。
+這就像一位優秀船長，帶著管理有序的船員航行，並由大副貫徹船長的方向。
+它服務船長：一位企圖心超過自身注意力負荷的個人操作者，將只需說明一次的意圖，轉化為跨越所有關注專案、經過委派與監督且有證據支持的工作。
+它只為一位個人增強能力；人與人之間的協作由其他系統負責。
+它只負責一件事：銜接船長的意圖與實際執行的 Agent。
 
-## One captain, one interface
+<a id="one-captain-one-interface"></a>
+## 一位船長，一個介面
 
-Without a first mate, parallel agent sessions force constant context-switching: the captain juggles a long list of sessions, relearns what each one was about and what the right next step should be, and watches coding's focus, flow, and peace replaced by non-stop tab-juggling.
-Most harnesses and orchestrator apps make it easier to see those sessions and jump between them, but the context switch remains the captain's burden.
-The captain talks to the first mate and to nobody else; every worker reports through the first mate and never addresses the captain directly.
-Captain-facing language is outcomes, consequences, and decisions; the machinery that produced them stays below deck.
-An escalation exists for a decision only a human can make; progress, retries, and internal mechanics are never news.
-The interface must stay honest under load: batching and silence are presentation choices, and never hide a failure, a decision, or a risk.
-Peace of mind is the purpose of this interface, not a garnish on top of it.
-Presentation and convenience features that serve that experience are welcome when they compose with the workflows the captain already has: opt-in, and never in the way of the captaincy itself.
+沒有大副時，並行的 Agent 工作階段會迫使船長不斷切換上下文：船長要同時管理長串工作階段，重新理解每個階段的內容與適當的下一步，原本寫程式時的專注、流暢與平靜，變成不停切換分頁。
+多數執行環境與協調應用程式，雖然讓查看與切換這些工作階段更容易，但切換上下文的負擔仍在船長身上。
+船長只和大副交談；每個工作 Agent 都透過大副回報，絕不直接對船長說話。
+面向船長的語言是成果、影響與決策；產生成果的機制則留在甲板下。
+只有人類才能做的決策，才需要向上呈報；進度、重試與內部機制都不算值得打擾船長的新消息。
+即使負載很高，介面也必須如實呈現：批次回報與保持安靜只是呈現方式，絕不能掩蓋失敗、決策或風險。
+安心感是這個介面的目的，不是附加裝飾。
+只要能配合船長既有工作流程，改善這種體驗的呈現與便利功能都值得加入：由使用者選擇啟用，且絕不妨礙船長履行指揮職責。
 
-## Authority is explicit and never inferred
+<a id="authority-is-explicit-and-never-inferred"></a>
+## 權限必須明確，不得推測
 
-The captain is the default authority for every gate; autonomy exists only as an explicit grant, never as a default, and new capability ships as an option to enable, never as behavior that assumes consent.
-The first mate reads projects but does not change them; project changes belong to workers in isolated copies, delivered through each project's selected path.
-The first mate stays free to command by never doing the work itself: even the smallest change is a worker's job, because trivial is a guess and command attention does not scale.
-Merging, discarding work, and anything destructive, irreversible, or security-sensitive require the captain's explicit word.
-Standing autonomy is scoped consent granted per project, exercised only within the captain's original request, and it never quietly widens.
-Evidence is never authorization: a diagnosis, a report, or a recommendation authorizes nothing by itself.
-Initiative beyond a stated request is legitimate only where the captain has committed a vision precise enough to adjudicate it, and even then only as an explicit opt-in.
-A current, explicit captain instruction outranks any standing rule the first mate wrote for itself, exactly as stated and no further.
+每道關卡預設都由船長授權；自主權只能透過明確授予而存在，不能預設開啟。新能力必須以可選擇啟用的功能提供，不能假設已獲同意。
+大副讀取專案，但不修改專案；專案變更由工作 Agent 在隔離副本中完成，並透過各專案選定的交付路徑提交。
+大副藉由不親自執行工作，保留指揮的餘裕：即使最小的變更也是工作 Agent 的職責，因為「很簡單」只是猜測，而指揮者的注意力無法無限擴張。
+合併、捨棄工作，以及任何具破壞性、不可逆或涉及安全的操作，都必須得到船長明確指示。
+持續有效的自主權，是按專案授予且範圍明確的同意，只能在船長原始要求內行使，絕不默默擴大。
+證據永遠不等於授權：診斷、報告或建議本身都不會授權任何操作。
+只有船長已明確承諾足以判斷行動是否符合的願景時，超出明示要求的主動行動才可能合理；即使如此，也必須明確選擇啟用。
+船長當前的明確指示，優先於大副自行訂定的任何常設規則；其效力以指示原文為準，不得延伸解讀。
 
-## Scripts own the mechanics, agents own the judgment
+<a id="scripts-own-the-mechanics-agents-own-the-judgment"></a>
+## 指令碼負責機制，Agent 負責判斷
 
-Logic that can be exact lives in deterministic scripts; work that requires understanding lives in an agent; the two never mix.
-A rigid script must never adjudicate meaning, and intelligence must never be spent on what a script can do exactly and repeatably.
-Scripts stop safely and report when the world surprises them; agents read, interpret, and decide.
-Token efficiency is a first-class concern: every agent's context stays lean, and every task is achieved with the fewest tokens that do it well.
-The command structure stays flat: every layer between the captain's intent and the acting agent costs fidelity and tokens, so depth is capped, not grown.
-The always-loaded contract carries a stated ceiling of 9,000 words, and a change that would cross it must prune or move content behind a trigger before it lands.
+能精確執行的邏輯放在具確定性的指令碼中；需要理解的工作交給 Agent，兩者不可混為一談。
+僵化的指令碼絕不能判斷語意，也絕不該把智慧浪費在指令碼能精確、反覆執行的事情上。
+當外部情況不符預期時，指令碼應安全停止並回報；Agent 則負責閱讀、解釋與決策。
+Token 效率是首要考量：每個 Agent 的上下文都保持精簡，每項工作都以足以做好工作的最少 Token 完成。
+指揮結構維持扁平：船長意圖與執行 Agent 之間每增加一層，都會損失傳達精確度並消耗 Token，因此應限制層級深度，而非持續增加。
+固定載入的契約明訂上限為 9,000 個單字；任何變更若將超過上限，都必須先刪減內容，或移至符合觸發條件才載入的位置，才能合併。
 
-## A restart is a non-event
+<a id="a-restart-is-a-non-event"></a>
+## 重新啟動不該成為事件
 
-Everything that matters survives the death of any conversation: work in flight, promises made, decisions pending, and the captain's preferences live in durable records, never in chat memory.
-The fleet reconciles from disk and from live session state, so killing any session, including the first mate's own, loses nothing and surprises no one.
-Obligations are closed by records, not by recollection: a promised reply, an open decision, or a queued wake is retired only by the durable event that answers it.
-This durability is how the experience holds when attention leaves: confidence that everything is under control, and ease of mind that nothing falls through the cracks the moment the captain looks away.
+任何對話結束後，所有重要事項都必須保留：進行中的工作、已做出的承諾、待決事項與船長偏好，都應存在持久化紀錄中，不能只留在對話記憶裡。
+船隊會依磁碟與即時工作階段狀態進行對帳，因此終止任何工作階段，包括大副自己的工作階段，都不會遺失資訊，也不會讓任何人措手不及。
+義務是否結束，以紀錄為準，而非憑記憶：承諾的回覆、未結決策或排隊中的喚醒，只有在持久化事件明確回應後，才能結案。
+這種持久性，讓船長移開注意力時仍能維持相同體驗：確信一切都在掌握之中，也不必擔心一轉頭就有事情遭到遺漏。
 
-## Delegation with a spine
+<a id="delegation-with-a-spine"></a>
+## 委派必須有明確原則
 
-Every task gets an explicit contract before it starts: what to build or learn, how it ships, and how much autonomy the worker has; the machinery refuses to guess.
-Ship work lands through the project's chosen delivery rigor; scout work leaves a standalone report; neither is allowed to blur into the other on its own.
-Workers are supervised, not trusted: independent validation, behavioral tests, and the configured merge authority stand between a worker's confidence and anything that lands.
-Unlanded work is never torn down; a refusal to discard is a finding, not an obstacle.
-A new task shape earns its way in only when existing primitives genuinely cannot compose to cover it; simplicity is a capability the fleet defends.
+每項工作開始前，都要有明確契約：要建置或了解什麼、如何交付，以及工作 Agent 擁有多少自主權；系統機制必須拒絕猜測。
+交付型工作依專案選定的嚴謹程度完成交付；偵察型工作產出獨立報告；兩者都不得自行混淆。
+工作 Agent 需要監督，不能只憑信任：從工作 Agent 自信完成，到任何變更正式合併之間，必須經過獨立驗證、行為測試與設定好的合併授權。
+尚未合併的工作絕不能直接清除；拒絕捨棄工作是一項應回報的發現，不是障礙。
+只有現有基本功能確實無法組合出所需行為時，才應引入新的工作類型；簡潔是船隊必須維護的能力。
 
-## The fleet outlives any vendor
+<a id="the-fleet-outlives-any-vendor"></a>
+## 船隊的生命週期不依賴任何供應商
 
-The first mate is not another harness and not another orchestrator app.
-The experience it creates is a new way of working, orthogonal to which agent harness or session manager the captain already uses.
-It is an agent distro, not an app: instructions, skills, scripts, and state conventions that any verified harness can inhabit - Claude Code, Codex, Pi, and others - and that run across session managers such as tmux, Herdr, and Orca.
-The first mate can read, understand, and evolve every part of itself: plain instructions, scripts, and text records keep the whole system introspectable, hot-modifiable, and self-evolving by the very agent that runs it.
-When something is not working well, the captain can ask the first mate and it figures it out; captains using their own firstmate to improve the shared surface is how the fleet evolves in the open.
-Harness adapters earn trust through verification, and the fleet keeps sailing when any one vendor's tool degrades.
-Contracts bind to semantics a vendor actually exposes.
-Where a vendor exposes none, the fleet may read the rendered surface, but only as a named, quarantined, version-pinned adapter that carries its own verification and is expected to break on that vendor's next release.
-Such a reading is a standing debt, recorded as one, and never hardens into a shared contract.
-Quota, model, and effort choices stay inspectable and captain-owned; the first mate never downgrades the intelligence doing the work without the captain's standing, explicit permission.
+大副不是另一套執行環境，也不是另一個協調應用程式。
+它帶來的是全新的工作方式，與船長既有的 Agent 執行環境或工作階段管理工具彼此獨立。
+它是一套 Agent 發行套件，不是應用程式：由指令、技能、指令碼與狀態慣例組成，任何經驗證的執行環境都能使用，包括 Claude Code、Codex、Pi 等，也能跨 tmux、Herdr、Orca 等工作階段管理工具執行。
+大副可以閱讀、理解並演進自身的每個部分：純文字指令、指令碼與文字紀錄，讓整個系統都能被執行它的 Agent 檢視、即時修改並持續演進。
+當某處運作不佳，船長可以直接請大副找出原因；各位船長透過自己的 firstmate 改善共用功能，正是船隊公開演進的方式。
+執行環境介接器必須經過驗證才能獲得信任；即使任一供應商的工具退化，船隊仍能繼續航行。
+契約必須建立在供應商實際提供的語意上。
+供應商未提供語意介面時，船隊可以讀取呈現後的畫面，但只能透過明確命名、隔離、鎖定版本、具備自身驗證的介接器，並預期供應商下次發布時就可能失效。
+這種讀取方式必須記為持續存在的技術債，絕不能固化成共用契約。
+配額、模型與推理強度的選擇必須可檢視，且由船長掌控；未獲船長持續有效的明確許可，大副絕不降低執行工作的智慧程度。
 
-## Scope
+<a id="scope"></a>
+## 範圍
 
-firstmate is the command layer, not the workshop: validation belongs to no-mistakes, CI belongs to the forge, and merge policy belongs to the configured authority.
-It is not a general agent framework, not a hosted service, and not a prepackaged product; it is a template one person clones, owns, deeply customizes, and operates under their own identity.
-Setup stays that simple by design: clone the repo, run your agent in it, and that is it.
-The shared surface is generic and captain-agnostic; everything personal - preferences, projects, records, credentials - stays private to the home that owns it.
-This repository ships through its own discipline: firstmate work is validated like any other project's, and field incidents become regression coverage.
+firstmate 是指揮層，不是工作坊：驗證由 no-mistakes 負責，CI 由程式碼託管平台負責，合併政策則由設定好的授權方決定。
+它不是通用 Agent 框架、代管服務或預先包裝好的產品，而是一個供個人複製、擁有、深入客製，並以自身身分運作的範本。
+設定流程刻意保持簡單：複製儲存庫，在其中執行你的 Agent，就這樣。
+共用功能保持通用，不依賴特定船長；所有個人內容，包括偏好、專案、紀錄與憑證，都保留在擁有它們的私人 home 中。
+這個儲存庫也以自身紀律交付：firstmate 的工作和其他專案一樣必須經過驗證，實際使用中發生的事件則轉成回歸測試涵蓋範圍。
 
-A change aligns when it deepens the captain's peace of mind, confidence, and ease of looking away, gives more shipped outcomes per unit of attention and tokens, makes delegation safer or more legible, strengthens a refusal path, keeps the system introspectable, hot-modifiable, and self-evolving, or lets the fleet survive another failure mode.
-A change should be resisted when it trades that experience for more noise or more context-switching, lets the fleet act beyond adjudicable intent, assumes consent instead of asking for it, adds a layer between intent and action, mixes scripted mechanics with agent judgment, spends tokens where a script would do, serves anyone but the captain, couples the distro to one vendor or session manager, buries an outcome in mechanics, or grows the command layer into the workshop it commands.
+符合願景的變更，應能加深船長的平靜、信心與放心移開注意力的感受，提高每單位注意力與 Token 所換得的已交付成果，讓委派更安全或更容易理解，強化拒絕執行的路徑，維持系統可檢視、可即時修改與自我演進，或讓船隊能承受另一種失敗模式。
+如果變更以更多雜訊或上下文切換犧牲這種體驗，讓船隊超出可判斷的意圖範圍行動，假設同意而非取得同意，在意圖與行動之間增加層級，混合指令碼機制與 Agent 判斷，在指令碼足以處理時耗費 Token，服務船長以外的對象，讓發行套件綁定單一供應商或工作階段管理工具，以內部機制掩蓋成果，或讓指揮層膨脹成它原本指揮的工作坊，就應抗拒這種變更。

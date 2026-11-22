@@ -1,64 +1,72 @@
-# Local Claude usage threshold warner
+<a id="local-claude-usage-threshold-warner"></a>
+# 本機 Claude 用量門檻警示器
 
-`bin/fm-usage-warner.sh` is an opt-in, macOS-only threshold warner for Claude usage windows.
-It is a warner, not a viewer: it never renders a live usage report, and it speaks only once when a configured window reaches a configured percentage of itself consumed.
+`bin/fm-usage-warner.sh` 是選擇性啟用、僅支援 macOS 的 Claude 用量時間窗門檻警示器。
+它負責警示，不是檢視器：不會呈現即時用量報告，只會在指定時間窗已消耗的比例達到設定百分比時，通知一次。
 
-The read itself is not new.
-[`quota-axi`](configuration.md) is the one Claude-quota reader this fleet depends on, already exposing `--json`, `--full`, `--tui`, and `--no-credential-refresh`; this script runs that exact read (through `bin/fm-quota-axi-lib.sh`'s own provider-row join) and never re-implements it.
-Every call passes `--no-credential-refresh`, so the read is strictly read-only; the script never passes `--allow-keychain-prompt` or any other credential-refreshing flag.
+讀取功能本身並不是新的。
+[`quota-axi`](configuration.md) 是這個船隊唯一依賴的 Claude 配額讀取器，已提供 `--json`、`--full`、`--tui` 與 `--no-credential-refresh`；本腳本使用完全相同的讀取機制（透過 `bin/fm-quota-axi-lib.sh` 自己的供應商資料列合併），絕不重新實作。
+每次呼叫都傳入 `--no-credential-refresh`，因此讀取嚴格維持唯讀；腳本絕不傳入 `--allow-keychain-prompt` 或任何會更新憑證的旗標。
 
-## Opt-in is load-bearing
+<a id="opt-in-is-load-bearing"></a>
+## 明確啟用是核心條件
 
-An unconfigured home sees no behaviour change: `check` stays completely silent, and `arm` refuses outright rather than registering a check that would never have anything to warn about.
-Nothing here makes `quota-axi` a dependency of anything beyond this one feature.
+未設定的主目錄不會改變任何行為：`check` 完全靜默，`arm` 則直接拒絕，不會註冊一個永遠沒有警示目標的檢查。
+這項功能不會讓其他功能也相依於 `quota-axi`。
 
-## Configuring thresholds (config/usage-warner)
+<a id="configuring-thresholds-configusage-warner"></a>
+## 設定門檻（config/usage-warner）
 
-Thresholds live in `config/usage-warner`, local and gitignored; its `<window-id>:<percent>` schema is owned by [`configuration.md`](configuration.md#local-claude-usage-warner-configusage-warner).
-`<window-id>` reuses `quota-axi`'s own `--json` `id` vocabulary - `five_hour`, `seven_day`, `model:<name>`, and so on - rather than inventing a second one.
-A configured window id the account does not return is silently never compared: this is a local convenience feature, not a critical monitor, so a stale or unavailable id is not treated as a misconfiguration to flag.
+門檻放在本機且被 gitignore 排除的 `config/usage-warner`；其 `<window-id>:<percent>` 結構由 [`configuration.md`](configuration.md#local-claude-usage-warner-configusage-warner) 定義。
+`<window-id>` 直接沿用 `quota-axi` 自己 `--json` 的 `id` 詞彙，例如 `five_hour`、`seven_day`、`model:<name>` 等，不另創一套。
+若設定的時間窗 id 沒有由帳號回傳，就會靜默略過比較：這是本機便利功能，不是關鍵監控，因此過期或無法取得的 id 不會被當作設定錯誤提出警示。
 
-The two account-level windows, `five_hour` and `seven_day`, are the reliable targets: they exist for every account regardless of what per-model windows a given account happens to return.
-See [`docs/examples/usage-warner`](examples/usage-warner) for a starting point to copy into a local `config/usage-warner`.
+帳號層級的兩個時間窗 `five_hour` 與 `seven_day` 是可靠目標：不論各帳號剛好回傳哪些個別模型時間窗，每個帳號都有這兩項。
+可複製到本機 `config/usage-warner` 的起始設定，請參閱 [`docs/examples/usage-warner`](examples/usage-warner)。
 
-## Behaviour: one read, two callers, edge-triggered
+<a id="behaviour-one-read-two-callers-edge-triggered"></a>
+## 行為：一次讀取、兩個呼叫端、邊緣觸發
 
-`check` is the one read with two callers - a human or another script running `fm-usage-warner.sh check` directly (on demand), and the watcher polling the registered shim on its normal `FM_CHECK_INTERVAL` cadence once armed (periodic).
-Both hit the identical function, so this is one program with two callers, not two programs, and there is no daemon and no schedule of its own.
-When the two overlap, they are serialized on `state/.usage-warner.lock`, and a check that finds that lock held exits quietly, so one crossing still warns once.
+`check` 是同一套讀取機制，供兩個呼叫端使用：人或其他腳本直接執行 `fm-usage-warner.sh check`（隨需），以及啟用後由監看器依正常 `FM_CHECK_INTERVAL` 週期輪詢已註冊的包裝腳本（定期）。
+兩者都呼叫完全相同的函式，因此是一個程式、兩個呼叫端，不是兩個程式；它沒有自己的常駐程序，也沒有自己的排程。
+兩者重疊執行時，會透過 `state/.usage-warner.lock` 序列化；檢查若發現鎖已被持有，就靜默結束，確保一次越過門檻仍只警示一次。
 
-A window that crosses a configured threshold notifies once, stays quiet while it remains at or above that threshold, and re-arms the moment it next reads back below threshold (an account-level window's own reset does exactly this).
-Each directive is tracked on its own, so tiered thresholds on one window such as `five_hour:80` and `five_hour:95` each warn on their own crossing.
-Multiple windows crossing in the same read are batched into one notification rather than one per window.
-A standing read failure (`quota-axi` missing, `jq` missing, a malformed response, or a read that does not finish inside its bound) is reported once until it changes, the same contract `bin/fm-mail-check.sh` and `bin/fm-tool-update-check.sh` already use for their own standing checks.
-The read bound is 10 seconds, or `FM_CHECK_TIMEOUT` minus 3 seconds when that is lower, so the watcher never kills the check first; when that leaves under 1 second the read is skipped and reported as not measured.
+時間窗越過設定門檻時，會通知一次；只要維持在門檻或以上，就保持靜默；下次讀到低於門檻的值時，立即重新待命（帳號層級時間窗自行重置時，就是這種情況）。
+每項指示各自追蹤，因此同一時間窗設定分級門檻，例如 `five_hour:80` 與 `five_hour:95`，會各自在越過門檻時通知。
+同一次讀取若有多個時間窗越過門檻，會合併成一則通知，而非每個時間窗各發一則。
+持續性的讀取失敗（缺少 `quota-axi`、缺少 `jq`、回應格式錯誤，或未在時限內完成讀取），只會回報一次，直到狀況改變；這沿用 `bin/fm-mail-check.sh` 與 `bin/fm-tool-update-check.sh` 對持續性檢查的既有契約。
+讀取上限為 10 秒；若 `FM_CHECK_TIMEOUT` 減 3 秒更短，則採較短值，確保監看器不會先終止檢查。若剩餘時間不足 1 秒，就略過讀取並回報未量測。
 
-## Notification path
+<a id="notification-path"></a>
+## 通知路徑
 
-Warnings reach macOS through Notification Center (`osascript display notification`), the same OS-level path firstmate's own away-mode wedge alarm resolves to on this platform ([`bin/fm-supervise-daemon.sh`](../bin/fm-supervise-daemon.sh)'s `wedge_alarm_via_osascript`), so the home keeps one alert mechanism rather than two.
-This script does not source or call into that daemon: production only execs the daemon, and the daemon's own library-mode guard defaults its notifier seam to "discard" whenever it is sourced instead, specifically so a second sourcing consumer can never fire a real notification through it.
-The away-mode config schema and max-defer rate limiting are also specific to buffered escalations, not to this feature's own edge-triggered de-dupe.
-So this script posts the identical OS call under its own title instead, which is the reusable part of "the same alerting path" without reaching into daemon-internal, away-mode-specific state.
-Notification Center is macOS-only, so `arm` refuses on any other platform.
+警示透過通知中心（`osascript display notification`）送達 macOS，與 Firstmate 自己在此平台的離開模式卡死警報使用相同作業系統層路徑（[`bin/fm-supervise-daemon.sh`](../bin/fm-supervise-daemon.sh) 的 `wedge_alarm_via_osascript`），讓主目錄維持一套警示機制，而非兩套。
+本腳本不會 source 或呼叫該常駐程序的內部功能：正式環境只以 exec 執行常駐程序；若改成 source，常駐程序自身的函式庫模式防護會將通知器替換點預設為「discard」，目的正是避免第二個載入者透過它發出真實通知。
+離開模式的設定結構與最長延遲頻率限制，也專屬於緩衝的升級事件，不適用於本功能自己的邊緣觸發去重。
+因此本腳本以自己的標題發出相同的作業系統呼叫；這就是「相同警示路徑」中可重用的部分，無須進入常駐程序內部、離開模式專屬的狀態。
+通知中心只支援 macOS，因此在其他平台上 `arm` 會拒絕執行。
 
-## Relationship to the quota process-event source
+<a id="relationship-to-the-quota-process-event-source"></a>
+## 與配額程序事件來源的關係
 
-[`bin/fm-procevent-quota.sh`](../bin/fm-procevent-quota.sh) reads the same `quota-axi` snapshot, so the two are worth telling apart.
-That source arms a blocking poll that fires at most once, wakes firstmate with a durable `check:` event, compares a tracked provider's aggregate `effectivePercentRemaining`, and must be re-armed by hand for any further monitoring.
-This warner is the standing half of that problem: it compares each named window separately and re-arms itself every time a window reads back below its threshold.
-A crossing raises a macOS notification and, once armed, also reaches firstmate as one `check:` wake per crossing, because the armed shim's report line is what the watcher turns into that wake.
-Naming the window is the point, because the session and weekly windows exhaust at very different times, so an aggregate figure does not say which one is about to run out.
-Neither replaces the other, and arming both is reasonable: this one warns per window on every crossing while a window is still closing, and the other fires once on a provider-wide aggregate until it is re-armed by hand.
+[`bin/fm-procevent-quota.sh`](../bin/fm-procevent-quota.sh) 讀取相同的 `quota-axi` 快照，因此有必要區分兩者。
+該來源會啟動阻擋式輪詢，最多觸發一次，以持久保存的 `check:` 事件喚醒 Firstmate，比較受追蹤供應商的彙總 `effectivePercentRemaining`；若要繼續監控，必須手動重新啟動。
+本警示器處理的是持續監控的另一半：逐一比較具名時間窗，且每當時間窗讀值回到門檻以下，就自行重新待命。
+越過門檻會發出 macOS 通知；啟用監看後，每次越過也會以一次 `check:` 喚醒到達 Firstmate，因為監看器會把已啟用包裝腳本的回報列轉為該喚醒。
+明確指出時間窗是重點，因為工作階段時間窗與每週時間窗會在非常不同的時點耗盡；彙總數值無法指出哪一個即將用完。
+兩者不互相取代，同時啟用也合理：本功能在時間窗尚未重置期間，每次越過各自門檻都會警示；另一個功能則針對供應商整體彙總值觸發一次，直到手動重新啟動為止。
 
-## Arming
+<a id="arming"></a>
+## 啟用監看
 
-Arm once per home with `bin/fm-usage-warner.sh arm` and remove it with `bin/fm-usage-warner.sh disarm`; what each writes or removes, and when `arm` refuses, is owned by [`configuration.md`](configuration.md#local-claude-usage-warner-configusage-warner).
+每個主目錄執行一次 `bin/fm-usage-warner.sh arm` 啟用，並以 `bin/fm-usage-warner.sh disarm` 移除；兩者分別寫入或移除的內容，以及 `arm` 何時拒絕執行，由 [`configuration.md`](configuration.md#local-claude-usage-warner-configusage-warner) 定義。
 
-## What this never does
+<a id="what-this-never-does"></a>
+## 絕不執行的事情
 
-Install, refresh, or write any credential; read or render a live usage report; or make `quota-axi` a dependency of anything beyond this one opt-in feature.
-Account or seat switching is explicitly out of scope: only the default account lane is ever read.
+安裝、更新或寫入任何憑證；讀取或呈現即時用量報告；或讓這項選擇性功能之外的其他功能相依於 `quota-axi`。
+帳號或席次切換明確不在範圍內：只會讀取預設帳號通道。
 
-It also does not stop or pace anything: crossing a threshold posts a warning and nothing else, so dispatch, running work, and merge behaviour are all unchanged.
-Its coverage is exactly what `quota-axi` can see locally.
-A plan or organisation spend cap that `quota-axi` does not report is therefore not covered by any threshold configured here, and surfaces only as an error in a harness pane; a silent warner means no configured window crossed, never that no cap is close.
+它也不會停止任何工作或調整執行節奏：越過門檻只會發出警告，因此派送、執行中的工作及合併行為都維持原樣。
+覆蓋範圍恰好等於 `quota-axi` 在本機看得到的範圍。
+因此，若 `quota-axi` 不回報某個方案或組織的支出上限，此處設定的任何門檻都無法涵蓋它，它只會以執行環境窗格中的錯誤浮現；警示器保持靜默，只代表沒有已設定的時間窗越過門檻，絕不代表沒有任何上限即將到達。

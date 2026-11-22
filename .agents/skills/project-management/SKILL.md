@@ -1,8 +1,8 @@
 ---
 name: project-management
 description: >-
-  Load before adding, creating, removing, or initializing a project.
-  Cloning or registering a project is add intake and uses the same trigger.
+  新增、建立、移除或初始化專案前載入。
+  Clone 或登錄專案也屬新增接案，使用相同觸發條件。
 user-invocable: false
 metadata:
   internal: true
@@ -10,96 +10,96 @@ metadata:
 
 # project-management
 
-Use this procedure before adding, creating, removing, or initializing a project.
-Cloning or registering a project is add intake and uses the same trigger.
-This skill is the single owner of Firstmate's project-management procedure.
-It does not replace `secondmate-provisioning`, which owns project clones inside persistent secondmate homes.
+新增、建立、移除或初始化專案前，使用此程序。
+Clone 或登錄專案也屬新增接案，使用相同觸發條件。
+此技能是 Firstmate 專案管理程序的唯一負責來源。
+它不取代 `secondmate-provisioning`，後者負責持久二副 home 內的專案 clones。
 
-## Preconditions and registry
+## 前置條件與登錄表
 
-Projects live flat under `projects/`, and `data/projects.md` is the private fleet registry.
-Use the registry format and parser contract owned by the header of `bin/fm-project-mode.sh`.
-Keep each registry description useful for identifying the project, but keep delivery posture, captain-private state, and detailed project knowledge in their existing designated homes.
-Do not turn the registry into project documentation.
+專案平放在 `projects/` 下，`data/projects.md` 是私有艦隊登錄表。
+使用 `bin/fm-project-mode.sh` 檔頭負責的登錄格式與解析器契約。
+每個登錄描述應有助辨識專案，但交付方式、船長私有狀態與詳細專案知識，要保留在既有指定位置。
+不要把登錄表變成專案文件。
 
-Before adding, cloning, creating, or registering any project in the main home, inspect the authoritative `data/secondmates.md` routing table and judge every existing natural-language `scope:` against the proposed project or domain.
-Apply `AGENTS.md` section 7's authoritative secondmate routing rules; if an existing scope owns that domain, route the new-project operation or work there instead of creating or registering a duplicate main-home clone.
-Absence from the main `data/projects.md` registry is never evidence that no second mate owns the domain.
-If the owning second mate cannot accept the route, report that concrete blocker or obtain an explicit captain redirection rather than silently duplicating the project in the main home.
+在 main home 新增、clone、建立或登錄任何專案前，檢查權威 `data/secondmates.md` 路由表，並逐一判斷每個既有自然語言 `scope:` 是否涵蓋擬議專案或領域。
+套用 `AGENTS.md` 第 7 節權威二副路由規則；既有 scope 若擁有該領域，將新專案操作或工作路由過去，不要在 main home 建立或登錄重複 clone。
+main 的 `data/projects.md` 登錄表沒有該專案，絕不代表沒有二副擁有該領域。
+所屬二副若無法接受路由，回報具體阻擋，或取得船長明確重新指派，不要默默在 main home 複製專案。
 
-Resolve the project name, destination, delivery posture, and autonomy posture before changing local or remote state.
-Keep a newly added clone and its registry entry consistent, and roll back only artifacts created by the incomplete operation when a later initialization step fails and that rollback is safe.
-Do not overwrite or repurpose an existing path.
+變更本機或遠端狀態前，先確定專案名稱、目的地、交付方式與自主性設定。
+新加入 clone 與登錄項目保持一致；後續初始化步驟失敗且可安全回復時，只回復該未完成操作建立的成品。
+不要覆寫或改作他用既有路徑。
 
-## Delivery posture
+## 交付方式
 
-The registry records the project's standing delivery posture and optional ship-branch prefix, which are the captain's defaults rather than any task's answer.
-`AGENTS.md` section 7 owns how each task's concrete mode, yolo, and branch prefix are resolved at intake and passed explicitly to the brief, the spawn, and any promotion.
-Choose that posture when adding or creating the project:
+登錄表記錄專案的長期交付方式與選用 ship 分支前綴，這是船長預設，不是任何單一任務的答案。
+每項任務具體 mode、yolo 與分支前綴如何在接案時解析，並明確傳給簡報、spawn 與任何升級，由 `AGENTS.md` 第 7 節負責。
+新增或建立專案時選定交付方式：
 
-- `no-mistakes` runs the full validation pipeline before a PR.
-- `direct-PR` pushes and opens a PR without the no-mistakes pipeline.
-- `local-only` has no required remote or PR and lands only through the approved local fast-forward path.
-- `no-mistakes-prod-only` is a conditional policy rather than one flat mode: genuinely internal-only tooling, automation, contributor or operator process, and release or submission work ships `direct-PR`, while product-facing, mixed, and uncertain work ships `no-mistakes`.
+- `no-mistakes` 在 PR 前執行完整驗證 pipeline。
+- `direct-PR` 直接 push 並開 PR，不執行 no-mistakes pipeline。
+- `local-only` 不要求 remote 或 PR，只透過核准的本機 fast-forward 路徑整合。
+- `no-mistakes-prod-only` 是條件政策，不是單一固定模式：真正僅限內部的工具、 automation、貢獻者或操作人員流程，以及發布或提交工作，使用 `direct-PR`；面向產品、混合與不確定工作使用 `no-mistakes`。
 
-`no-mistakes-prod-only` is the default for a newly added or created remote-backed project when the captain specifies nothing, and a project with no remote defaults to `local-only`.
-State that resolved default while confirming the source, local name, and posture instead of asking the captain to choose from scratch, and record a flat mode instead whenever they ask for one.
-Existing registry entries keep the meaning they already have and are never migrated or reinterpreted, so a legacy entry with no bracket stays `no-mistakes`.
-Registering a conditional policy is a one-time choice and never requires classifying any change; the per-task surface classification happens at each task's intake, and internal-only is never inferred from file location or project name.
+船長未指定時，新加入或建立、具有遠端的專案預設 `no-mistakes-prod-only`，無遠端專案預設 `local-only`。
+確認來源、本機名稱與方式時，直接說明解析後預設，不要要求船長從零開始選；船長要求固定模式時，就記錄該模式。
+既有登錄項目維持原有意義，絕不遷移或重新解讀，因此沒有方括號的舊項目仍是 `no-mistakes`。
+登錄條件政策是一次性選擇，絕不需要分類任何變更；逐任務介面分類在每次接案進行，絕不從檔案位置或專案名稱推斷為僅限內部。
 
-The optional `+yolo` posture changes merge authority only and does not change the delivery mode.
-Default it off for every project and every posture, and enable it only on the captain's explicit instruction.
-`AGENTS.md` section 7 owns the merge-authority contract.
+選用 `+yolo` 只改變合併權限，不改變交付模式。
+每個專案、每種方式預設關閉，只有船長明確指示才啟用。
+合併權限契約由 `AGENTS.md` 第 7 節負責。
 
-The optional `forge=` token records which forge the project's remote actually is; its values are `forge=gerrit`, `forge=forgejo`, and `forge=external`.
-It is orthogonal to the mode and to `+yolo`, so it is never derived from either, and it is never inferred at use time from a remote name, host, port, or push target.
-At add or create intake, run `bin/fm-forge-detect.sh projects/<name>` once the clone exists and propose its answer alongside the posture; the captain's confirmation is what binds it, and the registry token is the durable record of that confirmation.
-Never register the binding from detection alone, and never re-derive it later from the clone.
-`bin/fm-forge-detect.sh` never proposes `forge=forgejo`, so for a remote that may be Forgejo or Gitea ask the captain and register `forge=forgejo` only on that confirmation.
-A forge composes with `no-mistakes`, `direct-PR`, and `no-mistakes-prod-only` (`forge=external` with `direct-PR` only), and the registry refuses it on `local-only`, which publishes nothing; a Gerrit-hosted project kept local registers `local-only` with no forge token.
-`yolo` is inactive on a `forge=gerrit` project, so never propose `+yolo` alongside it.
-`forge=external` marks a project whose review tool uploads its own snapshot, so workers never push a task branch to its shared origin: it is never detected, so register it only on the captain's confirmation, as `[direct-PR forge=external]` with no `+yolo`, and only once the home has `config/external-review.md` (`docs/configuration.md` "External review tool").
-`bin/fm-project-mode.sh`'s header owns the binding and `bin/fm-dod-lib.sh` owns what it changes for a worker.
-The optional `pr=manual` token marks a `no-mistakes` project whose PR title and body a person writes, so the pipeline's `pr` step must not rewrite them; register it only on the captain's confirmation, with no `forge=` token (`docs/configuration.md` "PR text selection").
+選用 `forge=` token 記錄專案遠端實際是哪種 forge；值為 `forge=gerrit`、`forge=forgejo` 與 `forge=external`。
+它與 mode 和 `+yolo` 互相獨立，因此絕不從兩者推導，也絕不在使用時從 remote 名稱、主機、連接埠或 push 目標推斷。
+新增或建立接案時，clone 存在後執行一次 `bin/fm-forge-detect.sh projects/<name>`，將答案與交付方式一起提出；船長確認才建立綁定，登錄 token 是該確認的持久紀錄。
+絕不只憑偵測就登錄綁定，之後也絕不從 clone 重新推導。
+`bin/fm-forge-detect.sh` 絕不提出 `forge=forgejo`，所以遠端可能是 Forgejo 或 Gitea 時，要詢問船長，只有確認後才登錄 `forge=forgejo`。
+forge 可搭配 `no-mistakes`、`direct-PR` 與 `no-mistakes-prod-only`（`forge=external` 只搭配 `direct-PR`）；登錄表拒絕在不發布任何內容的 `local-only` 使用 forge，保留本機的 Gerrit 託管專案應登錄 `local-only`，不帶 forge token。
+`forge=gerrit` 專案的 `yolo` 不生效，因此絕不一起提出 `+yolo`。
+`forge=external` 標示審查工具會自行上傳快照的專案，因此工作 Agent 絕不將任務分支 push 到共用 origin；它永遠不會被偵測出來，所以只有船長確認後，才以 `[direct-PR forge=external]`、不帶 `+yolo` 登錄，而且 home 必須已有 `config/external-review.md`（`docs/configuration.md` 的「外部審查工具」）。
+綁定由 `bin/fm-project-mode.sh` 檔頭負責，對工作 Agent 造成的變更由 `bin/fm-dod-lib.sh` 負責。
+選用 `pr=manual` token 標示 PR 標題與內文由人員撰寫的 `no-mistakes` 專案，因此 pipeline 的 `pr` 步驟不可改寫；只有船長確認才登錄，且不帶 `forge=` token（`docs/configuration.md` 的「PR 文字選擇」）。
 
-## Add or clone an existing project
+## 新增或 clone 既有專案
 
-Confirm the source URL, local project name, delivery posture, and autonomy posture, stating the resolved default for each rather than asking the captain to invent one.
-Clone into `projects/<name>` and add the registry entry only after the destination is known to be unused.
-A `no-mistakes` or `no-mistakes-prod-only` project must have an `origin` remote and must complete the initialization procedure below, because a conditional policy's product-facing work runs the pipeline while its internal-only work still takes the direct PR.
-A `direct-PR` project needs an `origin` remote but skips no-mistakes initialization.
-A `local-only` project may have no remote and skips no-mistakes initialization.
-Confirm the matching CLI is authenticated for a non-GitHub host: `glab auth login` for a GitLab project, whose merge watch and merge use glab, or a `tea login add` for a `forge=forgejo` project, whose merge watch, merge, and generated ship brief use tea.
+確認來源 URL、本機專案名稱、交付方式與自主性設定，說明各項解析後預設，不要要求船長自行想一套。
+確認目的地未使用後，才 clone 到 `projects/<name>` 並新增登錄項目。
+`no-mistakes` 或 `no-mistakes-prod-only` 專案必須有 `origin` remote，且完成下述初始化程序，因為條件政策的產品工作會跑 pipeline，僅限內部工作仍走直接 PR。
+`direct-PR` 專案需要 `origin` remote，但略過 no-mistakes 初始化。
+`local-only` 專案可以沒有 remote，並略過 no-mistakes 初始化。
+非 GitHub 主機需確認對應 CLI 已驗證：GitLab 專案使用 `glab auth login`，其合併監看與合併使用 glab；`forge=forgejo` 專案使用 `tea login add`，其合併監看、合併與產生的 ship 簡報使用 tea。
 
-## Create a project
+## 建立專案
 
-Creating a GitHub repository is outward-facing.
-Before making that remote change, propose the repository name, owner or organization, visibility, and delivery posture, defaulting visibility to private and the posture to `no-mistakes-prod-only`, then obtain the captain's explicit consent for those exact values; a stated default never replaces that consent.
-Use `gh-axi` for the approved GitHub operation and consult its current help rather than relying on remembered flags.
-After remote creation succeeds, clone it locally, add the registry entry, and initialize it according to its delivery posture.
+建立 GitHub 儲存庫是對外操作。
+進行該遠端變更前，先提出儲存庫名稱、擁有者或組織、可見性與交付方式，預設可見性為 private，交付方式為 `no-mistakes-prod-only`，再取得船長對這些精確值的明確同意；說明預設值絕不取代同意。
+核准的 GitHub 操作使用 `gh-axi`，並查看目前 help，不依賴記憶中的旗標。
+遠端建立成功後，clone 到本機、新增登錄項目，並依交付方式初始化。
 
-For a purely `local-only` project, create a local Git repository under its unused `projects/<name>` path, add the registry entry, and make no GitHub call.
-A new repository has no commit, and spawn refuses to dispatch work into a project with an unborn `HEAD`.
-Tell the captain that the project needs a first commit.
-The captain's request to create that local project authorizes this local initialization, but it does not authorize an unmentioned remote repository.
+純 `local-only` 專案在未使用的 `projects/<name>` 路徑下建立本機 Git 儲存庫、新增登錄項目，不呼叫 GitHub。
+新儲存庫沒有提交，而 spawn 拒絕向尚未建立 `HEAD` 的專案派工。
+告訴船長，專案需要第一個提交。
+船長要求建立該本機專案，已授權此本機初始化，但不授權未提及的遠端儲存庫。
 
-## Initialize
+## 初始化
 
-Run no-mistakes initialization only for `no-mistakes` and `no-mistakes-prod-only` projects:
+只對 `no-mistakes` 與 `no-mistakes-prod-only` 專案執行 no-mistakes 初始化：
 
 ```sh
 (cd projects/<name> && no-mistakes init && no-mistakes doctor)
 ```
 
-Initialization configures the local gate and does not vendor a no-mistakes skill into the project.
-Do not create a commit merely because initialization ran.
-If doctor reports an environment, authentication, or daemon problem, resolve that blocker before dispatching work and never restart the shared daemon from a project operation.
+初始化設定本機關卡，不會將 no-mistakes 技能納入專案。
+不要只因執行初始化就建立提交。
+doctor 若回報環境、驗證或 daemon 問題，派工前先解決，絕不因專案操作重新啟動共用 daemon。
 
-## Remove
+## 移除
 
-Project removal is destructive.
-First obtain the captain's explicit removal decision, then inspect the current digest and authoritative repositories for in-flight or queued work, registered secondmate clones, linked worktrees, dirty files, unpushed commits, and any other unlanded work.
-If any dependency or unlanded work exists, stop and report it before changing anything.
-Never issue a raw removal command from Firstmate.
-Once that preflight confirms none of the above and the captain's approval is concrete, AGENTS.md hard rule 1's captain-approved project operation exception authorizes firstmate to remove the clone directly and update its registry entry to match.
-When a clone has already been removed through an approved removal, or the registry is provably stale because no clone exists, remove its registry line so navigation matches reality.
+專案移除是破壞性操作。
+先取得船長明確移除決策，再檢查目前摘要與權威儲存庫，確認進行中或排隊工作、已登錄二副 clones、連結 worktrees、dirty 檔案、未 push 提交，以及其他任何未整合工作。
+若有任何相依關係或未整合工作，在變更前停止並回報。
+絕不由 Firstmate 直接發出原始移除命令。
+前置檢查確認上述皆無，且船長核准已具體時，AGENTS.md 硬性規則 1 的船長核准專案操作例外，授權 firstmate 直接移除 clone 並同步更新登錄項目。
+clone 已透過核准移除，或可證明沒有 clone、登錄已過期時，移除其登錄行，讓導覽符合現況。

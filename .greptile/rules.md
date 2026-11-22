@@ -1,37 +1,26 @@
-# Review standards for this repository
+<a id="review-standards-for-this-repository"></a>
+# 本儲存庫的審查標準
 
-Rules the reviewer asked to have written down, recorded here so that a decision
-already argued out on one pull request is not re-litigated on the next one. Each
-rule states the conditions it depends on, because a rule with its conditions
-dropped stops being a decision and becomes a blind spot.
+這裡記錄審查者要求明文化的規則，避免已在某個 pull request 中討論定案的決策，到了下一個又重新爭論。
+每條規則都說明其成立條件，因為拿掉前提的規則，就不再是決策，而會變成盲點。
 
-## A captain-facing surface is not automatically a `VISION.md` violation
+<a id="a-captain-facing-surface-is-not-automatically-a-visionmd-violation"></a>
+## 面向船長的介面不一定違反 `VISION.md`
 
-This is the first mate's working interpretation rather than settled repository policy; whether `VISION.md` itself should be reconciled remains an open question belonging to the captain; and the conditions listed below are what this interpretation depends on.
+這是大副目前採用的工作解讀，尚非已定案的儲存庫政策；是否應同步修訂 `VISION.md`，仍是由船長決定的開放問題；這項解讀成立的前提，就是以下列出的條件。
 
-`VISION.md` says "The captain talks to the first mate and to nobody else; every
-worker reports through the first mate and never addresses the captain directly."
-That line protects who is answerable for work. Read alongside the sentence it
-shares a paragraph with, it governs workers reporting outward, not the surfaces
-the captain reaches inward through, so a front end the captain chooses to speak
-or type into is not by itself a breach of it.
+`VISION.md` 寫道：「船長只和大副交談；每個工作 Agent 都透過大副回報，絕不直接對船長說話。」
+這句話保障的是誰對工作負責。
+搭配同段落的其他敘述閱讀，它規範的是工作 Agent 向外回報，而非船長向內接觸系統的介面，因此船長選擇用來說話或輸入文字的前端，本身不構成違規。
 
-Do not flag a captain-facing front end as violating that line while **all** of
-these hold:
+只要以下條件**全部**成立，就不要把面向船長的前端標為違反這條規則：
 
-- it never claims to be the first mate, and says so in its own instructions;
-- it has no tool that can change a project, merge, discard work, or grant
-  authority;
-- work that is not answering from existing records is handed to the first mate
-  and announced as a handover, rather than performed or claimed.
+- 它從不自稱大副，且在自己的指令中明確說明這一點；
+- 它沒有能修改專案、合併、捨棄工作或授予權限的工具；
+- 超出根據既有紀錄回答的工作，都會交給大副，並明確告知已轉交，而非自行執行或聲稱完成。
 
-Any one of those failing is worth flagging, and flagging loudly: a front end that
-gains a write tool, drops the disclaimer, or reports work as its own is the case
-this line exists to catch.
+任一條件不成立，都值得指出，而且應明確強調：前端取得寫入工具、移除身分說明，或把工作當成自己的成果回報，正是這條規則要防止的情況。
 
-The known tension is not a defect either, and is already on the record: such a
-front end may hold read access to the captain's records, so the captain does
-sometimes get a substantive answer from something that is not the first mate.
-Whether `VISION.md` should be reconciled to describe that is the captain's call
-and is not settled by any single pull request. Raising it as new is what this rule
-is here to stop; `bin/fm-voice-relay.py` is the surface it was decided on.
+已知的張力本身也不是缺陷，而且早已記錄：這樣的前端可能擁有船長紀錄的讀取權，因此船長有時確實會從大副以外的對象得到實質回答。
+是否應修訂 `VISION.md` 以描述這點，應由船長決定，不能由任何單一 pull request 定案。
+這條規則就是為了避免把已知問題當成新發現重新提出；當初做出此決策的介面是 `bin/fm-voice-relay.py`。

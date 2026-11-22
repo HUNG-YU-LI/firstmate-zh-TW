@@ -1,41 +1,41 @@
-Mode: Pi extension background wake.
+模式：Pi 擴充功能背景喚醒。
 
-When this session owns supervision, in either posture:
-1. Drain first with `bin/fm-wake-drain.sh`.
-   After handling all emitted wakes and reconciling open decisions and unread status lines, run the exact `--ack-through` command printed as `WAKE_ACK_REQUIRED`; until then the work remains durable for idempotent re-handling after interruption.
-2. Confirm the Pi primary auto-loaded both project extensions (plain `pi` or `pi-signed`, after approving project trust once per clone); if not, restart the selected executable with `-e __FM_PI_TURNEND_EXT__ -e __FM_PI_EXT__` as a trust-free fallback.
-3. Initial process cycle only: make the one required `fm_watch_arm_pi` call; if startup already owned the fleet lock, this is an ownership-based no-op.
-   Use `/fm-watch-arm-pi` only as a human-entered fallback.
-   Never run `bin/fm-watch-arm.sh` through Pi's bash tool because that foreground arm can wedge the agent and bypasses extension-owned cleanup.
-4. If the extension says no live session holds the lock, run `bin/fm-session-start.sh` to reclaim the session lock, then call `fm_watch_arm_pi` again.
-5. The extension starts `bin/fm-watch-arm.sh --restart`, keeps the child attached to the live Pi process, and owns every later successor launch.
-6. Ordinary same-process session replacement (`/new`, `/resume`, `/fork`, reload) retires only the prior generation; when the replacement owns the fleet lock, its `session_start` arms the new generation without a model turn or another `fm_watch_arm_pi` call.
-   The generation-owner contract and in-flight actionable-close handoff live in `.pi/extensions/fm-primary-pi-watch.ts`.
-7. After an actionable child close, the extension rechecks session-lock ownership and verifies one successor before it delivers the follow-up wake; its bounded fallback is defined in `docs/watcher-continuity.md`.
-8. Ordinary work, turn completion, and ordinary signal, stale, check, heartbeat, or other wake handling: do not call `fm_watch_arm_pi` again because continuity is extension-owned rather than model-memory-owned.
-9. An unexpected child close enters bounded exponential retry, and an exhausted retry or lost session lock is surfaced as a watcher failure instead of disappearing.
-10. Missing, failed, or unhealthy cycle only: if a later notification explicitly reports one of those repair conditions, drain queued wakes, inspect the failure text, call `fm_watch_arm_pi`, and restart the selected Pi-family executable with both extensions loaded if needed.
-   A redundant call while the extension owns an arm child or scheduled retry is an ownership-based `watcher: unchanged` no-op, not an independent health claim.
-11. Never use shell `&` for watcher supervision.
-   The arm mechanism above is extension-owned, not a model tool call, but a manual recovery probe that backgrounds, pipes, or bundles the arm is denied automatically by the PreToolUse seatbelt (`bin/fm-arm-pretool-check.sh`, wired into the turn-end guard extension at `__FM_PI_TURNEND_EXT__`).
+當此工作階段負責監督時，不論處於哪種運作狀態：
+1. 先執行 `bin/fm-wake-drain.sh`，清空待處理的喚醒佇列。
+   處理完所有輸出的喚醒事件，並核對尚未處理的決策與未讀狀態列後，原樣執行以 `WAKE_ACK_REQUIRED` 印出的 `--ack-through` 指令；在此之前，工作會持久保存，即使中斷也能以冪等方式重新處理。
+2. 確認 Pi 主要工作階段已自動載入兩個專案擴充功能（每份複本核准一次專案信任後，直接啟動 `pi` 或 `pi-signed`）；若沒有，請以 `-e __FM_PI_TURNEND_EXT__ -e __FM_PI_EXT__` 重新啟動選定的執行檔，作為不需專案信任的備援。
+3. 僅限最初的程序週期：進行那一次必要的 `fm_watch_arm_pi` 呼叫；若啟動程序已擁有船隊鎖，這會是根據所有權判定、無須動作的操作。
+   `/fm-watch-arm-pi` 僅可作為由人輸入的備援方式。
+   絕不要透過 Pi 的 bash 工具執行 `bin/fm-watch-arm.sh`，因為前景啟動監看可能卡住 Agent，並繞過擴充功能負責的清理。
+4. 若擴充功能表示沒有存活工作階段持有鎖，請執行 `bin/fm-session-start.sh` 重新取得工作階段鎖，再呼叫 `fm_watch_arm_pi`。
+5. 擴充功能會啟動 `bin/fm-watch-arm.sh --restart`，讓子程序持續附掛在存活的 Pi 程序，並負責之後每一個接續程序的啟動。
+6. 同一程序內的一般工作階段替換（`/new`、`/resume`、`/fork`、reload），只會退役前一個世代；當替換後的工作階段擁有船隊鎖時，它的 `session_start` 會啟動新世代，無須模型回合，也無須再次呼叫 `fm_watch_arm_pi`。
+   世代負責者契約與處理中、需要行動的關閉事件交接，定義於 `.pi/extensions/fm-primary-pi-watch.ts`。
+7. 子程序因需要處理的事件而關閉後，擴充功能會重新檢查工作階段鎖的所有權，並驗證一個接續程序，再送出後續喚醒；其有界限的備援處理定義於 `docs/watcher-continuity.md`。
+8. 一般工作、回合完成，以及一般的 signal、stale、check、heartbeat 或其他喚醒處理：不要再次呼叫 `fm_watch_arm_pi`，因為連續性由擴充功能負責，而非仰賴模型記憶。
+9. 子程序非預期關閉時，會進入有上限的指數退避重試；重試耗盡或工作階段鎖遺失時，會明確回報監看器失敗，不會無聲消失。
+10. 僅限週期遺失、失敗或不健康時：若後續通知明確回報上述任一需要修復的情況，請清空喚醒佇列、檢查失敗文字、呼叫 `fm_watch_arm_pi`；如有需要，以兩個擴充功能都已載入的方式，重新啟動選定的 Pi 家族執行檔。
+   擴充功能已擁有監看啟動子程序或已排定重試時，重複呼叫會成為根據所有權判定的 `watcher: unchanged` 無動作操作，不是獨立的健康狀態宣告。
+11. 監看器監督絕不可使用 shell `&`。
+   上述啟動機制由擴充功能負責，並非模型的工具呼叫；但若手動復原探測把啟動程序放到背景、接上管線或與其他指令綁在一起，PreToolUse 防護機制（`bin/fm-arm-pretool-check.sh`，接在 `__FM_PI_TURNEND_EXT__` 的回合結束防護擴充功能中）會自動拒絕。
 
-The supervision branch is default-on (docs/pi-supervision-branch.md): whenever this session owns the fleet lock, the watcher extension hands eligible task-local rows from ordinary actionable wakes, plus selected fleet-wide heartbeat reviews, to the in-process supervision branch while main-only rows remain queued for this conversation.
-While the away-posture record `state/.afk-contract` exists the branch takes every row instead, this conversation receives no processing request, and main's standing authority relocates to the branch through the guarded scripts; a wake the branch cannot take and every watcher-failure alarm still reach this conversation, and the first run boundary after the record is archived presents what accumulated (docs/pi-supervision-branch.md "Postures").
-Decision-owned signal and stale routing, including whole-batch precedence and the independent heartbeat exception, is owned by [docs/pi-supervision-branch.md](../pi-supervision-branch.md#components-and-their-owners).
-A task-level routine outcome that says the worker is still busy, nothing new has happened since the last outcome, and no action was taken may use `silent=true`; an unchanged heartbeat may do the same with `task=fleet`.
-Both are stored but delivered without a rendered note, while routine outcomes reporting an action, state change, or new result stay rendered with ⛵ then the dim outcome text, and captain outcomes are never silent.
-A captain-facing outcome instead appears as one exact, sequence-keyed visible transcript entry, and while attended then arrives in this conversation as one hidden supervision processing request listing each `[seq N, recorded <age> ago] task: summary` it covers; outcomes recorded while away wait for that request until the record is archived.
-That request is the one turn in which MAIN processes the outcome, starting from the task's current state because the outcome is what was true when it was recorded: give the captain a visible response where one is due, answer or escalate a decision, act on a blocker or failure, or record that no further action is needed; the reply covers only the still-open outcomes, as if the settled ones, such as a decision since answered or a PR since merged, had never been listed, with no captain-facing mention even in a recap; then call the `fm_branch_processed` tool with the highest sequence the request listed, exactly once.
-Only that call closes the outcome; an unrelated, empty, or paraphrased answer leaves it open, and the current unprocessed sequence set is presented again at the next run boundary and at session start until it is acknowledged.
-Where that persisted entry is in this transcript it is already the captain-visible record, so MAIN must not re-emit it verbatim merely because it appeared (an outcome carried over from before a restart or a switch of primary may have no entry here); this prevents repetition but does not replace any captain-facing outcome response required by `AGENTS.md` section 9.
-Regression example - keep verbatim and never condense away: `[seq 41] claude-mod: implementation complete, ready for review` requires relaying a captain-facing outcome response, not just `Captain, shipshape.`.
-A merge ask with no URL that leans on the dim anchor violates `AGENTS.md` section 9.
-Before MAIN steers, controls lifecycle, or cleans up a task, claim its lease with `bin/fm-lease.sh claim <task>` and release it afterwards; a refused claim means the branch is acting on that task right now.
-This conversation still receives every other fleet-wide or unresolvable wake, the branch's wakes when it is unavailable, and every watcher-failure alarm regardless of posture, so the arm and repair contract above is unchanged.
-Treat the merged fleet event as already handled for fleet operations: MAIN must not re-drain, re-run, or acknowledge it.
-Separately, MAIN applies judgment about whether and how to surface, summarize, reference, or incorporate a merged sailboat outcome in the captain conversation; event ownership does not decide the conversational treatment.
-Read the durable outcome store with the fm_branch_outcomes tool when the captain asks what happened.
+監督分支預設啟用（docs/pi-supervision-branch.md）：只要此工作階段擁有船隊鎖，監看器擴充功能就會將一般需要處理的喚醒中，符合資格的任務本地列，以及選定的全船隊 heartbeat 檢視，交給程序內監督分支；只能由主要對話處理的列，則留在此對話的佇列。
+離開運作狀態紀錄 `state/.afk-contract` 存在期間，分支會改為接手每一列，此對話不會收到處理請求，而 main 的常設權限會透過受防護腳本移轉到分支；分支無法接手的喚醒及每個監看器失敗警報，仍會到達此對話，紀錄封存後的第一個執行邊界則會呈現累積內容（docs/pi-supervision-branch.md「Postures」）。
+由決策擁有的 signal 與 stale 路由，包含整批優先順序及獨立 heartbeat 例外，由 [docs/pi-supervision-branch.md](../pi-supervision-branch.md#components-and-their-owners) 定義。
+若任務層級的例行結果表示工作 Agent 仍在忙碌、從上次結果之後沒有新進展，也沒有採取任何行動，可使用 `silent=true`；未變更的 heartbeat 也可搭配 `task=fleet` 採用相同方式。
+兩者都會保存，但投遞時不呈現註記；回報行動、狀態變更或新結果的例行結果，仍會以 ⛵ 加上暗色結果文字呈現；應呈報船長的結果則絕不靜默。
+應呈報船長的結果會以一筆精確、帶序號鍵的可見對話紀錄出現；有人值守時，再以一個隱藏的監督處理請求送到此對話，逐一列出涵蓋的 `[seq N, recorded <age> ago] task: summary`；離開期間記錄的結果，則等離開紀錄封存後才送出該請求。
+該請求就是 MAIN 處理結果的那個回合，必須從任務目前狀態開始，因為結果只代表記錄當時的事實：該回應船長時給出可見回應、回答或升級決策、處理阻礙或失敗，或記錄無須進一步行動；回覆只涵蓋仍未結案的結果，已解決的結果，例如後來已回答的決策或已合併的 PR，視同從未列出，連摘要也不要向船長提起；之後以請求列出的最高序號呼叫 `fm_branch_processed` 工具，且只呼叫一次。
+只有這次呼叫會結案該結果；無關、空白或只是改述的回答，都會讓它維持未結案。目前尚未處理的序號集合，會在下一個執行邊界與工作階段啟動時再次呈現，直到確認為止。
+若持久保存的項目已在此對話紀錄中，它就是船長已看得到的紀錄，因此 MAIN 不得只因它出現就逐字重複（重新啟動或更換主要 Agent 之前留下的結果，可能尚未出現在此處）；這能避免重複，但不能取代 `AGENTS.md` 第 9 節要求的任何面向船長的結果回應。
+回歸範例——請逐字保留，絕不可精簡掉：`[seq 41] claude-mod: implementation complete, ready for review` 必須轉達一個面向船長的結果回應，不能只說 `Captain, shipshape.`。
+若合併請求沒有 URL，卻仰賴暗色錨點提供資訊，就違反 `AGENTS.md` 第 9 節。
+MAIN 在引導任務、控制其生命週期或清理任務之前，必須以 `bin/fm-lease.sh claim <task>` 取得租約，之後再釋放；取得被拒絕表示分支此刻正在處理該任務。
+此對話仍會收到其他所有全船隊或無法解析的喚醒、分支無法運作時原本由分支處理的喚醒，以及不受運作狀態影響的每個監看器失敗警報，因此上述啟動與修復契約不變。
+對船隊操作而言，合併後的船隊事件應視為已處理：MAIN 不得再次清空、重跑或確認該事件。
+另外，MAIN 仍需判斷是否及如何在船長對話中呈現、摘要、引用或納入合併後的帆船結果；事件所有權不決定對話上的處理方式。
+船長詢問發生了什麼事時，使用 fm_branch_outcomes 工具讀取持久結果儲存區。
 
-The turn-end guard extension lives at `__FM_PI_TURNEND_EXT__`.
-The watcher extension lives at `__FM_PI_EXT__`.
-Both are tracked, project-local `.pi/extensions/*.ts` files that Pi auto-discovers once the project is trusted; `bin/fm-session-start.sh` reports when the running Pi session has not loaded both required extensions.
+回合結束防護擴充功能位於 `__FM_PI_TURNEND_EXT__`。
+監看器擴充功能位於 `__FM_PI_EXT__`。
+兩者都是受版本控制、專案本機的 `.pi/extensions/*.ts` 檔案，專案受信任後 Pi 會自動探索它們；若執行中的 Pi 工作階段尚未載入兩個必要擴充功能，`bin/fm-session-start.sh` 會回報。

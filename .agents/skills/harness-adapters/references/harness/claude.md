@@ -1,116 +1,124 @@
 # Claude
 
-Busy hooks verified 2026-07-28 on Claude Code 2.1.220.
+忙碌 hooks 於 2026-07-28 在 Claude Code 2.1.220 驗證。
 
-## Operating facts
+<a id="operating-facts"></a>
+## 操作事實
 
-These command-line and terminal facts apply to pane-backed sessions; for T3 Code, read the [native lifecycle](../../../../../docs/t3code-backend.md#current-lifecycle-and-safety) and [provider-command limits](../../../../../docs/t3code-backend.md#active-limits).
+這些命令列與終端機事實適用於窗格式工作階段；T3 Code 請閱讀[原生生命週期](../../../../../docs/t3code-backend.md#current-lifecycle-and-safety)與[供應商命令限制](../../../../../docs/t3code-backend.md#active-limits)。
 
-| Fact | Value |
+| 事實 | 值 |
 |---|---|
-| Busy | Owned hooks: `UserPromptSubmit` opens while `Stop`, `StopFailure`, and `SessionEnd` close; a secondmate gets no `Stop` busy hook, because its home's tracked Stop guard is its only Stop writer, unless that guard predates `.fm-busy-stop` and the launch keeps the `Stop` idle hook (`../../../docs/turnend-guard.md` owns that); manual interrupt emits no hook, so control reports delivered keys and live endpoint only, publishes no idle event or cancellation claim, and usually leaves `claude-hook` busy. |
-| Exit | `/exit`. |
-| Interrupt | Single Escape. |
-| Skill | `/<skill>`, for example `/no-mistakes`. |
-| Model | `--model <model>`; discover through the interactive `/model` picker, with alias or full-name shape documented by `claude --help`. |
-| Effort | `--effort <low\|medium\|high\|xhigh\|max>`, verified on 2.1.196. |
-| Permissions | See [`Claude permission mode`](../../../../../docs/configuration.md#claude-permission-mode-configclaude-permission-mode) and [`persistent failover`](../../../../../docs/configuration.md#persistent-managed-policy-failover); the `auto` launch shape was verified on 2.1.269. |
+| 忙碌 | 負責狀態的 hooks：`UserPromptSubmit` 開啟，`Stop`、`StopFailure` 與 `SessionEnd` 關閉；二副不取得 `Stop` 忙碌 hook，因為 home 受版本控制的 Stop 防護是唯一 Stop 寫入器，除非該防護早於 `.fm-busy-stop`，啟動才保留 `Stop` 閒置 hook（由 `../../../docs/turnend-guard.md` 負責）；手動中斷不發出 hook，因此控制層只回報按鍵已送達與端點存活，不發布閒置事件，也不宣稱已取消，通常會留下 `claude-hook` 忙碌狀態。 |
+| 結束 | `/exit`。 |
+| 中斷 | 按一次 Escape。 |
+| 技能 | `/<skill>`，例如 `/no-mistakes`。 |
+| 模型 | `--model <model>`；透過互動式 `/model` 選擇器探索，別名或完整名稱形式由 `claude --help` 說明。 |
+| 推理強度 | `--effort <low\|medium\|high\|xhigh\|max>`，已於 2.1.196 驗證。 |
+| 權限 | 見 [Claude 權限模式](../../../../../docs/configuration.md#claude-permission-mode-configclaude-permission-mode)與[持久化容錯切換](../../../../../docs/configuration.md#persistent-managed-policy-failover)；`auto` 啟動形式已於 2.1.269 驗證。 |
 
-## Workspace trust
+<a id="workspace-trust"></a>
+## 工作區信任
 
-Claude gates a folder it has never seen behind an interactive workspace-trust dialog (titled "Quick safety check: Is this a project you created or one you trust?"), so every fresh task worktree would hit it, and so would every secondmate home no operator has opened by hand.
-`--dangerously-skip-permissions` does not cover that gate: `claude --help` records that the dialog is skipped only in non-interactive mode, through `-p` or a non-TTY stdout, while Firstmate's pane-backed and T3 provider sessions are interactive.
-Every Claude spawn therefore pre-registers its launch directory before launch, and the dialog does not appear: the task worktree for a ship or scout, and the home itself for a `--secondmate` spawn, in either seeded shape (a leased worktree or a standalone clone).
+Claude 對從未見過的資料夾設有互動式工作區信任對話框（標題為「Quick safety check: Is this a project you created or one you trust?」），因此每個全新任務 worktree 都會遇到它，每個操作人員尚未手動開啟過的二副 home 也是。
+`--dangerously-skip-permissions` 不涵蓋此關卡：`claude --help` 記載，只有透過 `-p` 或非 TTY stdout 的非互動模式才會略過此對話框，而 Firstmate 窗格式與 T3 供應商工作階段都是互動式。
+因此，每次 Claude spawn 都會在啟動前預先登錄啟動目錄，使對話框不會出現：ship 或 scout 使用任務 worktree，`--secondmate` spawn 則使用 home 本身，兩種預建形式（租用 worktree 或獨立 clone）皆同。
 
-A second, separate dialog - "Allow external CLAUDE.md file imports?" - renders whenever a loaded CLAUDE.md chain reaches outside the project tree, which every crewmate's does through the captain's own `~/.claude/CLAUDE.md` importing `~/.claude/RTK.md`.
-`--setting-sources project,local`, which only `../../../bin/fm-live-lab.sh` passes (an `fm-spawn.sh` worker loads the user settings too), does not suppress it either, and it gates the session exactly like the trust dialog: cursor on "No, disable external imports", no way to move the selection from firstmate's steering plane.
+另一個獨立對話框「Allow external CLAUDE.md file imports?」，會在載入的 CLAUDE.md 鏈延伸到專案樹外時出現；每個船員都會透過船長自己的 `~/.claude/CLAUDE.md` 匯入 `~/.claude/RTK.md`，因此都符合。
+只有 `../../../bin/fm-live-lab.sh` 會傳入的 `--setting-sources project,local`（`fm-spawn.sh` 工作 Agent 也會載入使用者設定）同樣不會抑制它；它與信任對話框一樣阻擋工作階段：游標停在「No, disable external imports」，而 firstmate 引導平面沒有移動選項的方式。
 
-`../../../bin/fm-claude-trust.sh` records `hasTrustDialogAccepted` for both the worktree and its primary checkout in `${CLAUDE_CONFIG_DIR:-$HOME}/.claude.json`, where a home's worker account pin or the declared account a spawn names decides `CLAUDE_CONFIG_DIR` (`../../../docs/configuration.md` "Worker account pin"), for a ship or scout spawn; a secondmate spawn registers only its own home entry, since a secondmate home has no separate primary-checkout entry to carry import consent forward from.
-For a ship or scout spawn, the external-imports flags (`hasClaudeMdExternalIncludesApproved`, `hasClaudeMdExternalIncludesWarningShown`) are carried forward alongside the trust flag only when the primary checkout's project entry already carries an explicit `hasClaudeMdExternalIncludesApproved===true` from a prior interactive session - the common first-spawn case is a project claude has never been asked about, so those two flags are left unwritten and the import dialog still renders, even though trust registers normally.
-When the project entry instead already carries an explicit decline (`hasClaudeMdExternalIncludesApproved===false` with `hasClaudeMdExternalIncludesWarningShown===true`), the whole registration refuses - including the trust flag - rather than manufacture consent the human never gave, so that spawn wedges on the trust dialog before it would even reach the import one.
-Both flags `false` is Claude Code's default entry for a project never asked, not a decline, and is treated like an absent flag: trust registers and the import dialog still renders.
-The why-two-entries mechanism and the consent-gating logic live in the script's own header comment, which is the one owner for that contract; the fact worth repeating here is that `../../../bin/fm-spawn.sh` refuses the spawn when the trust flag fails to land, rather than launching a worker that would wedge on that dialog.
+對 ship 或 scout spawn，`../../../bin/fm-claude-trust.sh` 會在 `${CLAUDE_CONFIG_DIR:-$HOME}/.claude.json`，同時為 worktree 與其主 checkout 記錄 `hasTrustDialogAccepted`；`CLAUDE_CONFIG_DIR` 由 home 的工作 Agent 帳號固定值，或 spawn 指定的已宣告帳號決定（`../../../docs/configuration.md` 的「工作 Agent 帳號固定」）。二副 spawn 只登錄自己的 home 項目，因為二副 home 沒有另一個主 checkout 項目可延續匯入同意。
+對 ship 或 scout spawn，只有主 checkout 的專案項目已帶有先前互動工作階段明確設定的 `hasClaudeMdExternalIncludesApproved===true`，外部匯入旗標（`hasClaudeMdExternalIncludesApproved`、`hasClaudeMdExternalIncludesWarningShown`）才會與信任旗標一同延續；常見首次 spawn 情況是 claude 從未詢問過此專案，因此這兩個旗標不寫入，即使信任正常登錄，匯入對話框仍會出現。
+若專案項目已明確拒絕（`hasClaudeMdExternalIncludesApproved===false` 且 `hasClaudeMdExternalIncludesWarningShown===true`），整個登錄會拒絕——包括信任旗標——以免製造人類從未給予的同意，因此該 spawn 會先卡在信任對話框，甚至還沒到匯入對話框。
+兩個旗標皆為 `false` 是 Claude Code 對從未詢問過專案的預設項目，不代表拒絕，會視同旗標不存在：信任登錄，匯入對話框仍出現。
+為何需要兩個項目的機制與同意關卡邏輯，位於指令碼自己的檔頭註解，該處是此契約的唯一負責來源；此處值得重述的是，若信任旗標未成功寫入，`../../../bin/fm-spawn.sh` 會拒絕 spawn，不會啟動必定卡在對話框的工作 Agent。
 
-Never try to answer either dialog with a key.
-Firstmate's key plane carries only Enter, Escape, and C-c with no arrow navigation, so it cannot move a dialog's selection at all, and both dialogs render with the cursor on their declining option, which means a sent Enter ends the session instead of accepting.
-A visible trust dialog means pre-registration did not take effect (or the project entry already carries an explicit decline) - inspect the store and the spawn's error output rather than sending keys.
-A visible external-imports dialog is expected, not a failure signal, whenever the project entry has no prior explicit approval on record - the common first-spawn case.
-`fm-control.sh <id> interrupt` delivers Escape, which is the safe way to clear a wedged workspace-trust dialog for inspection without answering it.
-Escape on the external-imports dialog is different: it records a permanent decline (`hasClaudeMdExternalIncludesApproved: false`, `hasClaudeMdExternalIncludesWarningShown: true`) that `../../../bin/fm-claude-trust.sh` then correctly refuses to override on every later spawn for that project.
-Leave a pane showing the external-imports dialog alone and have a person answer it interactively instead of interrupting it.
-To recover from an already-recorded decline, remove both flags from the project's entry in `~/.claude.json` and approve the imports dialog once by hand.
+絕不嘗試用按鍵回答任一對話框。
+Firstmate 的按鍵平面只支援 Enter、Escape 與 C-c，沒有方向鍵導覽，因此完全不能移動對話框選取；兩個對話框顯示時游標都停在拒絕選項，送 Enter 會結束工作階段，而不是接受。
+看到信任對話框表示預先登錄未生效（或專案項目已有明確拒絕）；應檢查儲存區與 spawn 錯誤輸出，不要傳送按鍵。
+若專案項目未記錄過明確核准，看到外部匯入對話框是預期行為，不是失敗訊號；這正是常見首次 spawn 情況。
+`fm-control.sh <id> interrupt` 會送達 Escape，可安全清除卡住的工作區信任對話框以便檢查，而不作回答。
+在外部匯入對話框按 Escape 則不同：它會記錄永久拒絕（`hasClaudeMdExternalIncludesApproved: false`、`hasClaudeMdExternalIncludesWarningShown: true`），之後該專案每次 spawn，`../../../bin/fm-claude-trust.sh` 都會正確拒絕覆蓋。
+窗格若顯示外部匯入對話框，應保持不動，請人員互動回答，不要中斷。
+若要從已記錄的拒絕復原，從 `~/.claude.json` 的專案項目移除兩個旗標，再手動核准一次匯入對話框。
 
-The once-per-machine bypass-permissions confirmation is a third, separate dialog, scoped to the machine rather than the path, and pre-registration does not address it.
-Never send Enter to that one either: it was observed rendering in the same shape as the trust dialog, with the selection on `No, exit` and the footer `Enter to confirm . Esc to cancel`, so Enter ends the session rather than accepting.
-Firstmate cannot move a selection with Enter, Escape, and C-c alone, so it cannot accept this dialog at all, and an operator accepts it once per machine instead.
-Inspect the session to identify which dialog is on screen, and report it rather than answering it.
-A launch under `config/claude-permission-mode=auto` never meets the bypass confirmation, because it does not request bypass mode: on 2.1.269 `claude --permission-mode auto` reached the composer directly with the footer `⏵⏵ auto mode on (shift+tab to cycle)`, so a captain who refuses the bypass dialog selects `auto` there instead of accepting it.
-The workspace-trust dialog is unaffected by the permission mode and still needs the pre-registration above.
+每台機器一次的 bypass-permissions 確認是第三種獨立對話框，範圍是機器而非路徑，預先登錄不會處理它。
+也絕不對它傳送 Enter：已觀察到它呈現與信任對話框相同形式，選取 `No, exit`，頁尾為 `Enter to confirm . Esc to cancel`，因此 Enter 會結束工作階段，不是接受。
+Firstmate 只靠 Enter、Escape 與 C-c 無法移動選取，所以完全無法接受此對話框，必須由操作人員每台機器接受一次。
+檢查工作階段辨識螢幕上是哪個對話框，並回報，不要回答。
+在 `config/claude-permission-mode=auto` 下啟動不會遇到 bypass 確認，因為它不要求 bypass 模式：2.1.269 的 `claude --permission-mode auto` 直接到達輸入區，頁尾為 `⏵⏵ auto mode on (shift+tab to cycle)`，因此拒絕 bypass 對話框的船長可改選該處的 `auto`，不必接受。
+工作區信任對話框不受權限模式影響，仍需上面的預先登錄。
 
-## Composer ghost
+<a id="composer-ghost"></a>
+## 輸入區幽靈文字
 
-Completed turns can render dim predicted text inside an empty composer, indistinguishable in plain `tmux capture-pane`.
-Firstmate-built Claude command lines scope `CLAUDE_CODE_ENABLE_PROMPT_SUGGESTION=false` to each worker and secondmate without changing global config.
-T3 Code owns its provider command and cannot carry this setting; [`docs/t3code-backend.md`](../../../../../docs/t3code-backend.md#active-limits) owns that backend limit.
-CLI `--prompt-suggestions` affects print or SDK mode only and did not suppress interactive ghost text on v2.1.186.
+回合完成後，空白輸入區可能顯示淡色預測文字，在純文字 `tmux capture-pane` 中無法區分。
+Firstmate 產生的 Claude 命令列會將 `CLAUDE_CODE_ENABLE_PROMPT_SUGGESTION=false` 限定到每個工作 Agent 與二副，不更動全域設定。
+T3 Code 負責自己的供應商命令，無法帶入此設定；該後端限制由 [`docs/t3code-backend.md`](../../../../../docs/t3code-backend.md#active-limits) 負責。
+CLI `--prompt-suggestions` 只影響列印或 SDK 模式，在 v2.1.186 無法抑制互動式幽靈文字。
 
-As defense in depth, `fm_composer_strip_ghost` in `../../../bin/fm-composer-lib.sh` removes SGR-2 runs before pending classification on styled tmux, Herdr, and Zellij readers.
-`../../../docs/herdr-backend.md` under "Composer and injection safety" owns dark-TRUECOLOR tradeoffs and `../../../docs/verification/runtime-backends.md` owns captures.
-Styled capture stays internal to the boolean detector; `fm-peek` and model-facing captures remain plain, without escapes.
+作為縱深防禦，`../../../bin/fm-composer-lib.sh` 的 `fm_composer_strip_ghost` 會在帶樣式的 tmux、Herdr 與 Zellij 讀取器進行待送出分類前，移除 SGR-2 片段。
+深色 TRUECOLOR 的取捨由 `../../../docs/herdr-backend.md` 的「輸入區與注入安全」負責，擷取內容由 `../../../docs/verification/runtime-backends.md` 負責。
+帶樣式擷取只留在布林偵測器內部；`fm-peek` 與面向模型的擷取維持不含跳脫碼的純文字。
 
-## Feedback drafts
+<a id="feedback-drafts"></a>
+## 意見回饋草稿
 
-Firstmate-built Claude command lines disable Claude's `/bug` and `/feedback` model-drafted feedback flow, preventing those workers and secondmates from queuing or submitting a bug report on the captain's behalf.
-T3 Code owns its provider command and cannot carry these controls; [`docs/t3code-backend.md`](../../../../../docs/t3code-backend.md#active-limits) owns that backend limit.
-The controls are scoped to the launched process and never modify the captain's global Claude settings; `launch_template()` in `../../../../../bin/fm-spawn.sh` owns their exact mechanics and defense-in-depth rationale.
+Firstmate 產生的 Claude 命令列會停用 Claude 的 `/bug` 與 `/feedback` 模型代擬意見回饋流程，避免工作 Agent 與二副代表船長排入或送出錯誤報告。
+T3 Code 負責自己的供應商命令，無法帶入這些控制；該後端限制由 [`docs/t3code-backend.md`](../../../../../docs/t3code-backend.md#active-limits) 負責。
+控制範圍僅限啟動的程序，絕不修改船長全域 Claude 設定；精確機制與縱深防禦理由由 `../../../../../bin/fm-spawn.sh` 的 `launch_template()` 負責。
 
-## Task control channel
+<a id="task-control-channel"></a>
+## 任務控制通道
 
-A Claude task worker's launch brief and Firstmate steering-inbox messages arrive as file-shaped content that is otherwise indistinguishable from indirect prompt injection.
-`launch_template()` in `../../../../../bin/fm-spawn.sh` establishes exactly those two Firstmate-owned channels as first-party instructions through `--append-system-prompt`, while leaving project files, fetched content, and other external material under the model's normal distrust and granting no merge, destructive, or security-sensitive authority beyond the brief.
-A `--secondmate` launch omits the statement because a secondmate operates under its own supervisor contract instead of a task worker's.
-On the t3code backend, follow the [per-directory worker-channel contract](../../../../../docs/t3code-backend.md#per-directory-harness-environment).
+Claude 任務工作 Agent 的啟動簡報與 Firstmate 引導收件匣訊息，以檔案形式內容送達，除此之外無法與間接提示注入區分。
+`../../../../../bin/fm-spawn.sh` 的 `launch_template()` 透過 `--append-system-prompt`，將恰好這兩個 Firstmate 擁有的通道確立為第一方指示；專案檔案、擷取內容與其他外部資料仍適用模型正常的不信任規則，且不授予超出簡報範圍的合併、破壞性操作或安全敏感權限。
+`--secondmate` 啟動省略此聲明，因為二副依自己的監督者契約運作，而非任務工作 Agent 契約。
+t3code 後端請遵循[逐目錄工作 Agent 通道契約](../../../../../docs/t3code-backend.md#per-directory-harness-environment)。
 
-## Skill listing budget
+<a id="skill-listing-budget"></a>
+## 技能清單預算
 
-Claude Code lists every skill name but keeps descriptions only within a budget of 1% of the model's context window, and on overflow it drops descriptions from the least-invoked skills first ([skills](https://code.claude.com/docs/en/skills#skill-descriptions-are-cut-short), read 2026-10-19).
-Firstmate's agent-only skills are rarely invoked by design, so on a small-context model or beside many plugin skills their descriptions, which are the trigger index `AGENTS.md` section 13 relies on, are the first to go.
-Run `/doctor` for the listing's estimated cost and biggest contributors, and `/skill-doctor` (Claude Code 2.1.252 or later) for each skill's context cost and how often it is invoked ([find unused skills](https://code.claude.com/docs/en/skills#find-unused-skills)).
-Two vendor settings are opt-in per home, never part of the shared contract:
+Claude Code 會列出每個技能名稱，但技能說明只保留在模型上下文視窗 1% 的預算內；超出時，先丟棄最少被呼叫技能的說明（[技能](https://code.claude.com/docs/en/skills#skill-descriptions-are-cut-short)，於 2026-10-19 閱讀）。
+Firstmate 僅供 Agent 的技能刻意很少呼叫，因此在小上下文模型，或與大量外掛技能並存時，其說明會最先消失，而這些說明正是 `AGENTS.md` 第 13 節仰賴的觸發索引。
+執行 `/doctor` 查看清單估算成本與主要占用項，並用 `/skill-doctor`（Claude Code 2.1.252 或更新版本）查看每個技能的上下文成本與呼叫頻率（[找出未使用技能](https://code.claude.com/docs/en/skills#find-unused-skills)）。
+兩個供應商設定可由各 home 自行選用，絕不是共用契約的一部分：
 
-- `skillListingBudgetFraction` raises the budget from its `0.01` default, up to `1` ([settings reference](https://code.claude.com/docs/en/settings-reference#skilllistingbudgetfraction)).
-- `skillOverrides` set to `"name-only"` lists a skill by name without its description ([visibility overrides](https://code.claude.com/docs/en/skills#override-skill-visibility-from-settings)); use it only for a skill this home never needs, such as `fmx-respond` without Relay or `firstmate-orca` without Orca, because it removes that skill's trigger.
+- `skillListingBudgetFraction` 可將預算從預設 `0.01` 提高，最高 `1`（[設定參考](https://code.claude.com/docs/en/settings-reference#skilllistingbudgetfraction)）。
+- 將 `skillOverrides` 設為 `"name-only"`，會只列技能名稱而不列說明（[可見性覆寫](https://code.claude.com/docs/en/skills#override-skill-visibility-from-settings)）；只對此 home 絕不需要的技能使用，例如未使用 Relay 的 `fmx-respond`，或未使用 Orca 的 `firstmate-orca`，因為這會移除該技能的觸發條件。
 
-Put either in user settings or the untracked `.claude/settings.local.json`, never the tracked project `.claude/settings.json`, which would impose one home's choice on every home and worker copy.
+兩者都應放在使用者設定或未追蹤的 `.claude/settings.local.json`，絕不放在受版本控制的專案 `.claude/settings.json`，否則會將某一 home 的選擇強加到每個 home 與工作 Agent 副本。
 
-## Primary integration
+<a id="primary-integration"></a>
+## 主 Agent 整合
 
-[`../../../../../docs/verification/supervision.md`](../../../../../docs/verification/supervision.md#turn-end-guard) records the current primary and Stop auto-arm live evidence.
-This differs from the worker hook, which only touches a task marker through `.claude/settings.local.json`.
-A Claude secondmate's busy hooks are not that file: `bin/fm-spawn.sh` passes the parent home's `state/<id>.claude-settings.json` through `--settings` and does not edit the mate home's `settings.local.json`.
+[`../../../../../docs/verification/supervision.md`](../../../../../docs/verification/supervision.md#turn-end-guard) 記錄目前主 Agent 與 Stop 自動啟用的實際證據。
+這與工作 Agent hook 不同，後者只透過 `.claude/settings.local.json` touch 任務標記。
+Claude 二副的忙碌 hooks 不在該檔案：`bin/fm-spawn.sh` 透過 `--settings` 傳入父 home 的 `state/<id>.claude-settings.json`，不編輯二副 home 的 `settings.local.json`。
 
-Primary `.claude/settings.json` registers `../../../bin/fm-turnend-guard.sh --claude` and `../../../bin/fm-claude-stop-autoarm.sh` under `Stop` and `../../../bin/fm-claude-stop-autoarm.sh` again under `StopFailure`, both auto-arm entries with `asyncRewake: true` and `timeout: 28800`.
-Guard exit 2 plus stderr forces continuation.
-Stop payload `stop_hook_active=true` follows any hook-driven continuation, including async reawakening, so Claude mode ignores it and uses cooperative claim and epoch plus bounded re-block; default Codex mode keeps it as a one-block loop guard.
+主 Agent 的 `.claude/settings.json` 在 `Stop` 下註冊 `../../../bin/fm-turnend-guard.sh --claude` 與 `../../../bin/fm-claude-stop-autoarm.sh`，並在 `StopFailure` 下再次註冊 `../../../bin/fm-claude-stop-autoarm.sh`；兩個自動啟用項目都帶有 `asyncRewake: true` 與 `timeout: 28800`。
+防護結束碼 2 加 stderr 會強制接續。
+任何 hook 驅動的接續（包括非同步重新喚醒）之後，Stop 承載資料都會帶 `stop_hook_active=true`，因此 Claude 模式忽略它，改用合作式認領、epoch 與有界限的再次阻擋；預設 Codex 模式則保留它作為一次阻擋的迴圈防護。
 
-Project `.claude/settings.json` loads only when the exact project root is the session root; Claude does not search parents, so Firstmate starts at repository root.
-Hooks still run through cwd-sensitive `/bin/sh`, so tracked commands anchor through `"$CLAUDE_PROJECT_DIR"/bin/...`.
-`../../../docs/turnend-guard.md` owns details.
+只有精確專案根目錄就是工作階段根目錄時，才會載入專案 `.claude/settings.json`；Claude 不搜尋父目錄，因此 Firstmate 從儲存庫根目錄啟動。
+Hooks 仍透過對 cwd 敏感的 `/bin/sh` 執行，因此受版本控制的命令以 `"$CLAUDE_PROJECT_DIR"/bin/...` 錨定。
+細節由 `../../../docs/turnend-guard.md` 負責。
 
-The Stop-owned watcher hook runs every Stop and every StopFailure, foregrounds `../../../bin/fm-watch-arm.sh` only when eligible, and uses exit-2 async reawakening as notification.
-The model handles notifications but never routine re-arm.
-On Claude Code 2.1.317 a `StopFailure` firing carries `session_id`, `transcript_path`, `cwd`, `prompt_id`, `error` (for example `authentication_failed`, `server_error`, `connection_failed`), and `last_assistant_message`, and honors the same `asyncRewake` registration and exit-2 rewake as `Stop` (live-verified 2026-11-03 on a herdr-hosted primary; `../../../../../docs/verification/supervision.md` owns the evidence).
-No `Stop` phase runs after an error end, so the guard's block budget never charges it; instead every `StopFailure`-driven exit-2 continuation (rewake, failure notice, suppressed retry, alarm, or interruption recovery) writes `state/.claude-autoarm-stopfailure-rewake` when it commits, and the next one inside `FM_CLAUDE_STOPFAILURE_REWAKE_COOLDOWN` (default 300 seconds) waits out the remainder before committing (standing down silently if AFK or a lost supervision need appeared meanwhile), so an API-error storm is paced to one continuation per window without ever dropping the continuation that guarantees the next hook firing.
-Unless `config/supervision-host-off` opts the home out, the hook foregrounds the supervision host instead, which also runs Claude's print mode as its headless engine; [`supervision-host.md`](../../../../../docs/supervision-host.md#engines) owns the verified engine facts.
-Claude's PreToolUse seatbelt blocks directly, and its deny is honored only with empty stdout; `../../../docs/arm-pretool-check.md` owns that contract.
+Stop 負責的監看器 hook 在每個 Stop 與每個 StopFailure 執行，只有符合資格時才以前景執行 `../../../bin/fm-watch-arm.sh`，並使用結束碼 2 的非同步重新喚醒作為通知。
+模型處理通知，但絕不負責例行重新啟用。
+在 Claude Code 2.1.317，觸發的 `StopFailure` 帶有 `session_id`、`transcript_path`、`cwd`、`prompt_id`、`error`（例如 `authentication_failed`、`server_error`、`connection_failed`）與 `last_assistant_message`，並與 `Stop` 一樣遵守 `asyncRewake` 註冊及結束碼 2 的重新喚醒（2026-11-03 已在 Herdr 上的主 Agent 實際驗證；證據由 `../../../../../docs/verification/supervision.md` 負責）。
+錯誤結束後不會執行 `Stop` 階段，因此防護的阻擋預算不會計入；改為每次 `StopFailure` 驅動、以結束碼 2 接續（重新喚醒、失敗通知、受抑制重試、警報或中斷復原）在確定執行時寫入 `state/.claude-autoarm-stopfailure-rewake`，下一次若位於 `FM_CLAUDE_STOPFAILURE_REWAKE_COOLDOWN`（預設 300 秒）內，就先等完剩餘時間再確定執行（期間若出現 AFK 或監督需求消失，就靜默退讓），讓 API 錯誤風暴以每個時間窗一次接續的節奏進行，同時絕不丟掉確保下一次 hook 觸發的接續。
+除非 home 透過 `config/supervision-host-off` 退出，hook 會改以前景執行監督主機，該主機也以 Claude 列印模式作為無介面引擎；已驗證的引擎事實由 [`supervision-host.md`](../../../../../docs/supervision-host.md#engines) 負責。
+Claude 的 PreToolUse 安全帶會直接阻擋，且只有 stdout 為空時拒絕才會被遵守；該契約由 `../../../docs/arm-pretool-check.md` 負責。
 
-### Delegation guard
+<a id="delegation-guard"></a>
+### 委派防護
 
-Claude delegation, scheduling, and worktree tools can create work without `state/<id>.meta`, making guards unable to count it.
-`../../../bin/fm-subagent-pretool-check.sh` denies delegation-shaped tool names.
-A primary should also keep an untracked home-local `permissions.deny` for known delegation tools so they disappear from the schema.
-Never track it in project `.claude/settings.json`, which is Claude-only and propagates to worker copies where it would disarm legitimate delegation.
-`../../../docs/subagent-guard.md` owns the contract, recommendation, `FM_ALLOW_SUBAGENT=1`, and applicability review.
+Claude 的委派、排程與 worktree 工具可以建立沒有 `state/<id>.meta` 的工作，使防護無法計數。
+`../../../bin/fm-subagent-pretool-check.sh` 會拒絕具有委派形式的工具名稱。
+主 Agent 也應在未追蹤、僅限該 home 的 `permissions.deny` 中列出已知委派工具，使它們從結構描述中消失。
+絕不將其追蹤於專案 `.claude/settings.json`，因為它只適用 Claude，且會傳播到工作 Agent 副本，讓合理委派被停用。
+契約、建議、`FM_ALLOW_SUBAGENT=1` 與適用性審查由 `../../../docs/subagent-guard.md` 負責。
 
-On Claude 2.1.217 the tool presents as `Agent`, and both `Agent` and `Task` worked as deny keys in an A/B with nonsense control.
-`permissions.allow` pre-approves rather than controls availability, so no closed positive allowlist exists.
+在 Claude 2.1.217，工具顯示為 `Agent`；以無意義控制值作 A/B 比較時，`Agent` 與 `Task` 都可作為拒絕鍵。
+`permissions.allow` 是預先核准，不控制可用性，因此不存在封閉式正向允許清單。

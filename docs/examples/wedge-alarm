@@ -1,25 +1,24 @@
-# config/wedge-alarm - active alert channels for the away-mode injection wedge
-# alarm (bin/fm-supervise-daemon.sh's inject_wedge_alarm). Copy this into a
-# local, gitignored config/wedge-alarm and edit. One channel directive per
-# non-empty, non-comment line; every listed non-off channel fires, best-effort.
+# config/wedge-alarm — 離席模式注入卡住時的主動警示通道
+# （bin/fm-supervise-daemon.sh 的 inject_wedge_alarm）。
+# 將本檔複製到本機、已納入 gitignore 的 config/wedge-alarm 後編輯。
+# 每個非空白、非註解行放一筆通道指令；列出的每個非 off 通道都會盡力發送。
 #
-# Directives:
-#   off              position-independent kill switch: disable every active
-#                    alert (the durable marker and tmux status-line flash remain)
-#   auto | default   platform default: macOS -> osascript; other platforms have
-#                    no built-in OS channel (configure a command: line instead)
-#   osascript        macOS Notification Center banner (backend-independent)
-#   herdr            herdr UI notification (herdr notification show)
-#   rex              a blocked badge plus desktop notification on Firstmate's own
-#                    Rex pane, removed after the next delivered digest; needs a
-#                    Rex supervisor pane and is never part of auto
-#   command:<cmd>    run <cmd> via `sh -c`; the alarm summary is passed as $1 and
-#                    on stdin, so it can reach a phone/pager while you are away
+# 指令：
+#   off              不受位置影響的總開關：停用所有主動警示
+#                    （持久保存的標記與 tmux 狀態列閃爍仍保留）
+#   auto | default   平台預設：macOS 使用 osascript；其他平台沒有內建
+#                    作業系統通道（請改設定 command: 行）
+#   osascript        macOS 通知中心橫幅（與後端無關）
+#   herdr            herdr 介面通知（herdr notification show）
+#   rex              在 Firstmate 自己的 Rex 窗格顯示受阻徽章及桌面通知，
+#                    下一次摘要送達後移除；需要 Rex 監督窗格，且不包含在 auto 中
+#   command:<cmd>    透過 `sh -c` 執行 <cmd>；警示摘要以 $1 與標準輸入傳入，
+#                    讓你離席時也能透過手機或呼叫器收到通知
 #
-# An ABSENT config/wedge-alarm behaves as `auto` (default-on on macOS): the
-# alarm exists precisely so a wedged away-mode primary is never silent.
+# config/wedge-alarm 不存在時，行為等同 `auto`（macOS 預設啟用）：
+# 此警示的目的，就是避免離席中的主要 Agent 卡住後完全沒有動靜。
 #
-# Example: a macOS banner plus a push to a phone via ntfy.sh, so a wedge that
-# happens overnight reaches you even away from the machine.
+# 範例：同時顯示 macOS 橫幅，並透過 ntfy.sh 推送到手機，
+# 讓夜間發生的卡住狀況，即使你不在電腦旁也能收到通知。
 osascript
 command: curl -fsS -H "Title: firstmate wedge alarm" -d "$1" https://ntfy.sh/replace-with-your-topic

@@ -1,114 +1,121 @@
-# tmux runtime backend
+<a id="tmux-runtime-backend"></a>
+# tmux 執行期後端
 
-tmux is Firstmate's verified reference runtime backend and the fully supported baseline for secondmate homes.
-[`configuration.md`](configuration.md#runtime-backend-configbackend--fm_backend) owns shared backend selection and metadata semantics.
+tmux 是 Firstmate 經過驗證的參考執行期後端，也是完整支援二副主目錄的基準。
+[`configuration.md`](configuration.md#runtime-backend-configbackend--fm_backend) 負責定義共用後端選擇方式與中繼資料語意。
 
-## Setup
+<a id="setup"></a>
+## 設定
 
-Install tmux with `brew install tmux` or your platform package manager.
-The universal harness and toolchain requirements are in [`configuration.md`](configuration.md#toolchain).
+使用 `brew install tmux` 或平台套件管理器安裝 tmux。
+通用執行環境與工具鏈需求請參閱 [`configuration.md`](configuration.md#toolchain)。
 
-tmux is the hard default when no explicit setting or runtime auto-detection selects another backend.
-Select it explicitly with local `config/backend` containing `tmux`, with `FM_BACKEND=tmux` for one launch, or by asking Firstmate to use tmux.
-Explicit tmux selection via `config/backend` or `--backend tmux` overrides runtime auto-detection.
+若沒有明確設定或執行期自動偵測選擇其他後端，tmux 就是最終預設值。
+可在本機 `config/backend` 寫入 `tmux`、為單次啟動設定 `FM_BACKEND=tmux`，或要求 Firstmate 使用 tmux，以明確選用它。
+透過 `config/backend` 或 `--backend tmux` 明確選擇 tmux，會覆蓋執行期自動偵測。
 
-No provisioning is required before the first task.
+第一個任務之前不需要任何佈建。
 
-## Watching the crew
+<a id="watching-the-crew"></a>
+## 觀看船員工作
 
-For the best visible experience, launch the primary harness inside a tmux session:
+為取得最佳可見體驗，請在 tmux 工作階段內啟動主要執行環境：
 
 ```sh
 tmux new -s firstmate
 ```
 
-Crew tasks become windows in that session, even while another client is attached through a grouped session (`tmux new-session -t <session>`).
-`tmux display-message -p '#S'` prints its name unless a grouped session was used more recently.
-If the primary harness runs outside tmux, Firstmate creates or reuses a detached session named `firstmate`:
+船員任務會成為該工作階段內的視窗，即使另一個用戶端透過群組工作階段（`tmux new-session -t <session>`）附加，也一樣。
+`tmux display-message -p '#S'` 會印出其名稱，除非最近使用過另一個群組工作階段。
+若主要執行環境在 tmux 外執行，Firstmate 會建立或重用一個名為 `firstmate` 的未附加工作階段：
 
 ```sh
 tmux attach -t firstmate
 ```
 
-Each task window is named `fm-<id>`.
+每個任務視窗命名為 `fm-<id>`。
 
 ```sh
 tmux list-windows -t <session-name>
 tmux select-window -t <session-name>:fm-<id>
 ```
 
-Typing into an attached task window is authoritative direct intervention.
-Routine supervision does not require attachment: `bin/fm-peek.sh <id>` captures a bounded tail and `FM_HOME=<home> bin/fm-send.sh <id> '<text>'` steers the recorded endpoint.
+在已附加的任務視窗中鍵入內容，是具有權威性的直接介入。
+例行監督不需要附加：`bin/fm-peek.sh <id>` 擷取有限範圍的尾端，`FM_HOME=<home> bin/fm-send.sh <id> '<text>'` 則引導已記錄端點。
 
-Verify setup by spawning a small task and confirming its `fm-<id>` window appears in the selected session.
+派生一個小任務，並確認其 `fm-<id>` 視窗出現在選定工作階段，即可驗證設定。
 
-## Current behavior and safety
+<a id="current-behavior-and-safety"></a>
+## 目前行為與安全性
 
-### Agent liveness probe
+<a id="agent-liveness-probe"></a>
+### Agent 存活性探測
 
-A target-existence check proves only that the pane exists.
-The deeper tmux agent-liveness probe first verifies exact window membership, then reads process names to distinguish a running harness from a bare idle shell.
-It classifies recognized Claude, Codex, OpenCode, Pi, pi-signed, Grok, Kimi, Cursor, Muse, Rovo, and AGY process identities as `alive`, common shells as `dead`, an authoritatively absent window as `missing`, unreadable state as `unreadable`, and every other process as `ambiguous`.
-The process-name vocabulary behind those verdicts is owned by `bin/fm-agent-process-lib.sh` and shared with the Herdr adapter, which proves a registered agent against the same names ([herdr-backend.md](herdr-backend.md) "Restart and liveness behavior").
-Only `dead` and `missing` authorize recovery because a false dead result could launch a duplicate agent.
+目標存在性檢查只能證明窗格存在。
+更深入的 tmux Agent 存活性探測，會先驗證精確的視窗歸屬，再讀取程序名稱，以區分執行中的執行環境與單純閒置 shell。
+它將可識別的 Claude、Codex、OpenCode、Pi、pi-signed、Grok、Kimi、Cursor、Muse、Rovo 與 AGY 程序身分分類為 `alive`，一般 shell 分類為 `dead`，可明確證實不存在的視窗分類為 `missing`，無法讀取的狀態分類為 `unreadable`，其他所有程序分類為 `ambiguous`。
+這些判定背後的程序名稱詞彙由 `bin/fm-agent-process-lib.sh` 定義，並與 Herdr 轉接器共用；後者用相同名稱驗證已註冊 Agent（[herdr-backend.md](herdr-backend.md)「Restart and liveness behavior」）。
+只有 `dead` 與 `missing` 允許復原，因為誤判死亡可能啟動重複 Agent。
 
-For positive attribution, the probe combines two independent name sources rather than making either one load-bearing.
-`#{pane_current_command}` and the pane tty foreground process group's kernel `comm` values expose different name fields, and which one retains executable identity is platform-dependent.
-The foreground probe also reads argv[0] so an exact harness install-path component can carry the verdict when the other fields expose a rewritten process name.
-Either source naming a verified harness is enough for `alive`, because a false `dead` is the one verdict that can start a duplicate agent on a live worktree, while a readable foreground process group settles the negative verdicts.
+為了正確確認身分，探測會結合兩個獨立名稱來源，不讓任一個成為唯一依據。
+`#{pane_current_command}` 與窗格 tty 前景程序群組的核心 `comm` 值，呈現不同名稱欄位；哪一個保留執行檔身分，依平台而異。
+前景探測也讀取 argv[0]，因此其他欄位顯示改寫後程序名稱時，精確的執行環境安裝路徑元件仍可支撐判定。
+任一來源指出已驗證執行環境，就足以判為 `alive`，因為錯誤的 `dead` 是唯一會在存活 worktree 啟動重複 Agent 的判定；可讀的前景程序群組則用來確定否定判定。
 
-Scoping the second source to the foreground process group rather than to the pane's descendants is deliberate: a harness-named process left running in the background of an otherwise idle pane must not read as an agent.
-The same scoping covers multi-process launchers without a special case, so the Pi Launcher path is attributed through its `pi-signed` wrapper and `pi` engine even though its title is the exact foreground command `pi-launcher`.
-Direct executable identities `pi`, `pi-signed`, and `Pi` remain accepted exactly, and similar or prefixed process names are not accepted through those exact Pi-family entries.
-Muse is likewise anchored to the exact `muse` launcher identity or the installed `muse-bin-<version>` prefix, so unrelated names such as `musescore` and `amuse` remain ambiguous.
-omp is anchored to the exact `omp` identity for the same reason, so `ompd` and `comp` remain ambiguous.
-AGY, Devin, and Command Code are anchored to the exact `agy`, `devin`, and `command-code` identities for the same reason, so unrelated names containing any of those fragments remain ambiguous.
-Polytoken is anchored to the exact `polytoken` identity for the same reason, so unrelated names containing that fragment remain ambiguous.
-Cortex is anchored to the exact `cortex` identity for the same reason.
-Hermes uses anchored native TUI script or Python module argv through `bin/fm-hermes-process-lib.sh`; [Hermes verification](verification/hermes.md) owns the current process and composer evidence.
-An unrelated tool that ships a binary named exactly `cortex` is still classified as an agent when it is a pane's foreground process, because the exact name is the only identity Cortex Code carries.
-Kiro is anchored to the exact `kiro-cli` foreground identity for the same reason (its toolbox/aim-sandbox wrapper is the foreground process, with the compiled binary a descendant), so unrelated names containing that fragment remain ambiguous.
-Cursor is identified from its exact `cursor-agent` identity or versioned install tree in the foreground process path or structured argv[0]; a bare `node` or unrelated `agent` remains ambiguous.
+刻意將第二個來源限制在前景程序群組，而非窗格所有後代程序：若整體閒置的窗格背景仍留著一個具有執行環境名稱的程序，不能因此讀成 Agent。
+相同範圍界定也自然涵蓋多程序啟動器，無須特例；因此 Pi Launcher 路徑可透過 `pi-signed` 包裝器與 `pi` 引擎歸屬，即使其標題是精確的前景指令 `pi-launcher`。
+直接執行檔身分 `pi`、`pi-signed` 與 `Pi` 仍只接受精確相符；相似或帶前綴的程序名稱，不會透過這些精確 Pi 家族項目被接受。
+Muse 同樣固定比對精確 `muse` 啟動器身分，或已安裝的 `muse-bin-<version>` 前綴，因此 `musescore`、`amuse` 等無關名稱仍為有歧義。
+omp 基於相同原因固定比對精確 `omp` 身分，因此 `ompd` 與 `comp` 仍為有歧義。
+AGY、Devin 與 Command Code 同樣固定比對精確的 `agy`、`devin` 與 `command-code` 身分，因此含有這些片段的無關名稱仍為有歧義。
+Polytoken 同樣固定比對精確 `polytoken` 身分，因此含有該片段的無關名稱仍為有歧義。
+Cortex 也基於相同原因固定比對精確 `cortex` 身分。
+Hermes 透過 `bin/fm-hermes-process-lib.sh` 使用錨定的原生 TUI 腳本或 Python 模組 argv；目前程序及輸入區證據由 [Hermes 驗證](verification/hermes.md) 定義。
+若無關工具恰好提供一個精確名為 `cortex` 的執行檔，且它是窗格前景程序，仍會被分類為 Agent，因為精確名稱是 Cortex Code 唯一提供的身分。
+Kiro 同樣固定比對精確的 `kiro-cli` 前景身分（其 toolbox／aim-sandbox 包裝器是前景程序，編譯後執行檔則是後代程序），因此含有該片段的無關名稱仍為有歧義。
+Cursor 透過前景程序路徑或結構化 argv[0] 中的精確 `cursor-agent` 身分，或帶版本的安裝樹識別；單純 `node` 或無關的 `agent` 仍為有歧義。
 
-The CI-enforced portable regression and opt-in real-harness drift guard follow the split owned by `.agents/skills/firstmate-coding-guidelines/SKILL.md`.
-Run the real-harness guard after any harness upgrade and before trusting refreshed evidence.
+CI 強制執行的可攜式回歸測試，以及選擇性啟用的真實執行環境漂移防護，依照 `.agents/skills/firstmate-coding-guidelines/SKILL.md` 定義的分工。
+每次執行環境升級後，在信任更新證據之前，都要先執行真實執行環境防護。
 
-### Composer, busy state, and delivery
+<a id="composer-busy-state-and-delivery"></a>
+### 輸入區、忙碌狀態與投遞
 
-Agent liveness and composer safety are separate checks.
-The tmux reader is a thin adapter over the fleet-wide classifier in `bin/fm-composer-lib.sh`: it contributes one styled full-pane capture, the `#{cursor_y}` cursor row, and foreground-process identity probes, and the shape containing the cursor - a complete bordered box (titled bottom borders tolerated, and rounded titled top rules only for a pane whose foreground process is exactly `cortex`), a bare agent-glyph row with its wrapped input, opencode's left bar, or Pi's identity-corroborated separator pair - normally decides the verdict.
-Since OpenCode 1.18.0 its left bar also draws the working directory and branch right-aligned inside the rows above the Build footer, and the classifier recognises that cwd:branch furniture structurally so an idle pane keeps a proven `empty` verdict.
-OpenCode 1.19.0 draws its mode/model footer row de-emphasised, so the classifier proves that footer from both the ghost-stripped and the ANSI-stripped form of the row; the dated capture and the plain-form safety argument are in [runtime backend verification](verification/runtime-backends.md#2026-10-14-opencode-1190-de-emphasised-modefooter-row-in-the-left-bar-composer).
-Real text in an identified shape is pending, while only positively proven emptiness reads empty.
-A blank or otherwise unidentified cursor row is `unknown` and every consumer defers, except that a foreground process proven to be Cursor or Cortex is re-read cursorlessly because each parks its terminal cursor below its footer.
-That identity-gated exception preserves the strict container-proof rule for every other pane, so a modal dialog, a dead shell between stale rules, or a mid-redraw pane is never an injection target.
-The shared classifier accepts a shell glyph as an empty agent composer only inside a bordered container.
-A bare shell prompt is `unknown`, so away-mode escalation is never injected into a dead shell.
+Agent 存活性與輸入區安全性是兩項獨立檢查。
+tmux 讀取器是 `bin/fm-composer-lib.sh` 全船隊分類器的精簡轉接器：提供一次保留樣式的完整窗格擷取、`#{cursor_y}` 游標列，以及前景程序身分探測；通常由包含游標的結構決定判定結果——完整邊框（容許下框線帶標題；圓角且帶標題的上框線僅適用於前景程序精確為 `cortex` 的窗格）、單純 Agent 符號列及其換行輸入、OpenCode 左側欄，或有身分佐證的 Pi 分隔線配對。
+從 OpenCode 1.18.0 起，其左側欄也會在 Build 頁尾上方各列內，靠右繪製工作目錄與分支；分類器會從結構識別這些 cwd:branch 介面元素，讓閒置窗格維持可證明的 `empty` 判定。
+OpenCode 1.19.0 將模式／模型頁尾列改為弱化顯示，因此分類器會同時依據移除幽靈文字後及移除 ANSI 後的列來證明該頁尾；附日期擷取與純文字形式的安全性論證，見[執行期後端驗證](verification/runtime-backends.md#2026-10-14-opencode-1190-de-emphasised-modefooter-row-in-the-left-bar-composer)。
+已識別結構中的真實文字為 pending；只有明確證明為空，才讀為 empty。
+空白或其他無法識別的游標列為 `unknown`，所有使用端都延後操作；唯一例外是前景程序已證明為 Cursor 或 Cortex，因為兩者都將終端機游標停在頁尾下方，所以會改以不依賴游標的方式重讀。
+這個受身分約束的例外，為其他所有窗格保留嚴格的容器證明規則，因此模態對話框、殘留框線之間的死亡 shell，或正在重繪的窗格，絕不會成為注入目標。
+共用分類器只有在具邊框容器內，才接受 shell 符號作為空白 Agent 輸入區。
+單純 shell 提示列為 `unknown`，因此離開模式的升級事件絕不會注入死亡 shell。
 
-Busy state is not read from rendered text on this backend.
-A task's busy, idle, unknown, or dead verdict comes from the semantic busy-state contract owned by `bin/fm-busy-lib.sh`; [architecture](architecture.md#busy-state-is-semantic-per-adapter) owns its boundaries.
-The isolated rendered-tail busy fallbacks that remain are harness-scoped, so one adapter's output can never classify another's task.
-The submit acknowledgement and away-mode supervisor-pane busy guard below still consult rendered output, but only to decide whether input can be delivered, never to decide recorded task state.
-The supervisor guard selects only the detected primary harness's signature rather than a global union of vendor patterns.
+此後端不從畫面文字讀取忙碌狀態。
+任務的 busy、idle、unknown 或 dead 判定，來自 `bin/fm-busy-lib.sh` 負責的語意忙碌狀態契約；其邊界由[架構文件](architecture.md#busy-state-is-semantic-per-adapter)定義。
+仍保留的獨立畫面尾端忙碌備援，都限制於特定執行環境，因此某個轉接器的輸出絕不會用來分類另一個轉接器的任務。
+下方送出確認及離開模式監督器窗格忙碌防護，仍會參考畫面輸出，但只用來判斷輸入能否送達，絕不決定已記錄任務狀態。
+監督器防護只選擇已偵測主要執行環境的特徵，而非把所有供應商模式混成全域聯集。
 
-`bin/fm-tmux-lib.sh` owns exact type-and-submit mechanics.
-It types a message once and retries Enter only until the composer clears.
-Only a proven empty composer is a positive delivery acknowledgement.
-Text left in established structure remains `pending`, text in ambiguous structure remains unproven, and unreadable or unsafe state remains unknown.
-An ordinary local `fm-send.sh` text steer and every remote text steer no longer ride this verified submit at all: they become durable steering-inbox records plus best-effort constant doorbell lines (`bin/fm-task-inbox-lib.sh`).
-The verdicts above are delivery-critical only for the local typed plane - harness-native invocations and explicit backend targets - where `fm-send.sh` still never retypes or assumes a confirmed submit for an unconfirmed verdict; its header owns the distinct delivered-unconfirmed exit status and operator response.
+`bin/fm-tmux-lib.sh` 負責精確的鍵入與送出機制。
+它只鍵入訊息一次，之後只重試 Enter，直到輸入區清空。
+只有已證明為空的輸入區，才是正面的投遞確認。
+已建立結構中留下的文字維持 `pending`；歧義結構中的文字仍未獲證實；無法讀取或不安全的狀態仍為 unknown。
+一般本機 `fm-send.sh` 文字引導，以及所有遠端文字引導，如今都不再走這個已驗證送出路徑：它們會成為持久保存的引導收件匣紀錄，再加上盡力傳送的固定通知訊號列（`bin/fm-task-inbox-lib.sh`）。
+上述判定只有在本機鍵入操作層——執行環境原生呼叫及明確後端目標——才是投遞關鍵；在該路徑中，`fm-send.sh` 仍絕不重複鍵入，也不會對未確認判定假設送出已確認。其標頭定義了獨立的「已送出但未確認」結束狀態與操作者回應。
 
-OpenCode has one busy-queue exception.
-While OpenCode is mid-turn, Enter queues the message but leaves its text visible until the turn completes.
-After the normal retry budget, only structurally proven pending text in a provably busy pane is accepted as queued, while an idle pane remains `pending` as a genuine swallowed Enter.
-Ambiguous pending text never receives the busy-queue conversion.
-A second, baseline-gated conversion covers harnesses whose mid-turn screen the classifier cannot identify (Pi replaces its separated composer while working): when and only when the pane was idle before the text was typed, an idle-to-busy transition across the submit's own Enter confirms delivery, the same turn-started signal Herdr reads natively.
-Without that baseline, an `unknown` verdict is preserved untouched, so a busy-looking pane can never convert an unread composer into a confirmation.
-`tests/fm-tmux-submit-busy.test.sh` covers busy and idle panes with proven, ambiguous, and cleared composers.
+OpenCode 有一個忙碌佇列例外。
+OpenCode 回合進行中時，Enter 會將訊息排入佇列，但文字會保持可見，直到回合完成。
+正常重試預算耗盡後，只有在可證明忙碌的窗格中、結構上已證明 pending 的文字，才會被接受為已排入佇列；閒置窗格則仍維持 `pending`，視為 Enter 確實被吞掉。
+有歧義的 pending 文字絕不套用忙碌佇列轉換。
+第二種受基準狀態約束的轉換，涵蓋分類器無法識別回合中畫面的執行環境（Pi 工作時會取代其分隔式輸入區）：當且僅當鍵入文字之前窗格為閒置，且這次送出自己的 Enter 造成閒置轉忙碌，才確認投遞；這與 Herdr 原生讀取的回合開始訊號相同。
+沒有該基準時，`unknown` 判定完全保留，因此看起來忙碌的窗格，絕不可能把未讀取成功的輸入區轉成確認。
+`tests/fm-tmux-submit-busy.test.sh` 涵蓋忙碌及閒置窗格中，已證明、有歧義及已清空的輸入區。
 
-## Limits and regression entry points
+<a id="limits-and-regression-entry-points"></a>
+## 限制與回歸測試入口
 
-- tmux is the reference path and supports secondmate homes.
+- tmux 是參考路徑，並支援二副主目錄。
 
 ```sh
 tests/fm-backend-tmux-smoke.test.sh
@@ -124,4 +131,4 @@ tests/fm-tmux-submit-busy.test.sh
 tests/fm-bootstrap.test.sh
 ```
 
-[`verification/runtime-backends.md`](verification/runtime-backends.md#tmux) records the active foreground-process and submit evidence.
+[`verification/runtime-backends.md`](verification/runtime-backends.md#tmux) 記錄目前有效的前景程序與送出證據。

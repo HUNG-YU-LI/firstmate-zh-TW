@@ -1,34 +1,34 @@
-Supervision host: on for this home (`config/supervision-host-off` turns it off; [`supervision-host.md`](../supervision-host.md) owns the design).
-{claude} The Stop hook runs the supervision host in the arm's place, and everything above still holds with these additions:
-{cursor} The `stop` hook park runs the supervision host in the arm's place, and everything above still holds with these additions:
-{agy} The Stop-hook park runs the supervision host in the arm's place, and everything above still holds with these additions:
-{opencode} The OpenCode TUI plugin runs the supervision host in the arm's place, and everything above still holds with these additions:
-{omp} The omp watch extension runs the supervision host in the arm's place, and everything above still holds with these additions:
-{grok} Your tracked background arm above runs the supervision host (`bin/fm-supervision-host.sh park`) in the plain arm's place, and everything above still holds with these additions:
-{codex-park} The asynchronous Stop park runs the supervision host in the watcher's place and delivers handed-back wakes through the native thread queue.
-{codex-checkpoint} Every foreground checkpoint runs the supervision host in the watcher's place, and everything above still holds with these additions:
-{claude,cursor} 1. Attended (no away record, including a quiet-mode record; see [Postures](../supervision-host.md#postures)): a headless supervision session takes the wakes the supervision branch may take and never wakes you for a routine outcome, so fewer wakes reach you; check wakes, decision wakes, and whatever it cannot take still reach you exactly as above.
-{opencode,omp,grok,codex,agy} 1. Attended (no away record; see [Postures](../supervision-host.md#postures)): every wake reaches you exactly as above, because no verified dialog mirror feeds a supervision session from this harness yet.
-{claude,cursor}    `supervision-host: branch-outcome: ...` means it handled a wake and recorded captain outcomes for you: run `bin/fm-wake-drain.sh`, process each entry of its `BRANCH OUTCOMES` section as firstmate from the task's current state, because each entry says how long ago it was recorded (tell the captain, land or merge what is ready, answer or escalate a decision, or act on a blocker; your reply covers only entries still open, as if a settled one, such as a PR since merged, had never been listed), then run the `mark-processed` acknowledgement it prints; every drain presents them again until you do.
-{claude,cursor}    `supervision-host: the supervision session could not take this wake ...` means the wake is yours: handle it as above.
-{claude,cursor}    A failing turn may include a `supervision-host:` health note about repeated engine errors: tell the captain when it matters and handle the handed-back wake as usual; during cooldown later attended closes reach you unchanged.
-{claude,cursor}    Routine outcomes never wake you; your next drain lists only visible routine outcomes under `BRANCH OUTCOMES, ROUTINE` for awareness, with nothing to acknowledge. Silent rows do not appear there, but remain available through `bin/fm-branch-outcome.sh list`.
-2. Away (an away record exists and no daemon runs): the host hands each wake to a headless away session that runs the supervision branch's contract under the record, and you are parked.
-{claude}    Only a wake the host hands back reaches you, as `Stop hook feedback` carrying the close plus one `supervision-host: <why>` line.
-{cursor,opencode,omp,agy}    Only a wake the host hands back reaches you, as a `watcher` follow-up carrying the close plus one `supervision-host: <why>` line.
-{grok}    Only a wake the host hands back reaches you, as the arm's background-task-completed notification whose output carries the close plus one `supervision-host: <why>` line.
-{codex-checkpoint}    Only a wake the host hands back reaches you, as checkpoint output carrying the close plus one `supervision-host: <why>` line.
-{codex-checkpoint}    While an away record exists each checkpoint uses the longer away bound (`FM_CODEX_WATCH_CHECKPOINT_AWAY`, default 3600s, subject to the host's park cap; see [`supervision-host.md`](../supervision-host.md#the-park-boundary)), so a captain message waits until the checkpoint returns unless the captain interrupts it.
-   That wake is automatic supervision, not the captain's return: drain and handle it under the away posture, and never run the return from it.
-   After the return, a `supervision-host:` line naming the captain's return during a turn means that turn has visible outcomes missing from the return brief, whether the wake was handled or handed back: relay every following `supervision-host: outcome ...` line to the captain (the rows also remain in `bin/fm-branch-outcome.sh list`), then drain and handle any queued wake before acknowledging.
-   Each such visible outcome is also a queued `check: supervision-host outcome <n> ... was recorded after the captain returned` wake, which the drain presents until acknowledged: relay each outcome once, whichever arrives first, and acknowledge its `BRANCH OUTCOMES` entry too when it has one. Silent outcomes remain in the store but do not generate a handoff line or check wake.
-{claude,cursor,agy} 3. `supervision-host: cycle boundary ...` means the host ended its park at its bound: run `bin/fm-wake-drain.sh`, handle whatever it presents, run its printed acknowledgement (an empty queue prints `--ack-through 0`), and end the turn; the next park starts at that turn end.
-{opencode,omp} 3. `supervision-host: cycle boundary ...` means the host ended its park at its bound and the next park has already started: run `bin/fm-wake-drain.sh`, handle whatever it presents, and run its printed acknowledgement (an empty queue prints `--ack-through 0`).
-{grok} 3. `supervision-host: cycle boundary ...` means the host ended its park at its bound: run `bin/fm-wake-drain.sh`, handle whatever it presents, run its printed acknowledgement (an empty queue prints `--ack-through 0`), and re-arm the same background host call.
-{codex-park} 3. Quiet host park boundaries retain the same watcher and recovery generation without a model call.
-{codex-checkpoint} 3. The host's park boundary returns as the checkpoint's ordinary `checkpoint: no actionable wake within <n>s` line; handle it as step 5 above says.
-4. A guarded command that exits 6 naming the branch actor's lease means the supervision session is handling that task right now: leave the lease alone and retry after it releases, which it does when its turn ends.
-5. Captain outcomes the away session records stay in the outcome store until the return drain presents them; the return brief (`bin/fm-afk-return.sh`) counts them and points you to the `BRANCH OUTCOMES` section for processing and acknowledgement ([Captain outcomes](../supervision-host.md#captain-outcomes)).
-{claude,grok} 6. `/afk` writes only the record here (`bin/fm-afk-launch.sh start-native` refuses the away daemon on this home); for `/quiet`, follow the [quiet skill](../../.agents/skills/quiet/SKILL.md).
-{cursor,opencode,omp,codex,agy} 6. `/afk` writes only the record here (`bin/fm-afk-launch.sh start` refuses the away daemon on this home); for `/quiet`, follow the [quiet skill](../../.agents/skills/quiet/SKILL.md).
-{grok} 7. The pre-tool seatbelt does not classify the host command, so keep it exactly the one background call above: never shell `&`, a pipe, or another command bundled onto it.
+監督主機：此主目錄已啟用（`config/supervision-host-off` 可停用；設計由 [`supervision-host.md`](../supervision-host.md) 定義）。
+{claude} Stop hook 會以監督主機取代一般監看啟動程序；上述規則仍然適用，並補充以下內容：
+{cursor} `stop` hook 的停駐會以監督主機取代一般監看啟動程序；上述規則仍然適用，並補充以下內容：
+{agy} Stop hook 的停駐會以監督主機取代一般監看啟動程序；上述規則仍然適用，並補充以下內容：
+{opencode} OpenCode TUI 外掛會以監督主機取代一般監看啟動程序；上述規則仍然適用，並補充以下內容：
+{omp} omp 監看擴充功能會以監督主機取代一般監看啟動程序；上述規則仍然適用，並補充以下內容：
+{grok} 上述受追蹤的背景啟動程序，會執行監督主機（`bin/fm-supervision-host.sh park`）取代一般啟動程序；上述規則仍然適用，並補充以下內容：
+{codex-park} 非同步 Stop 停駐會以監督主機取代監看器，並透過原生執行緒佇列投遞交還的喚醒。
+{codex-checkpoint} 每個前景檢查點都會以監督主機取代監看器；上述規則仍然適用，並補充以下內容：
+{claude,cursor} 1. 有人值守（沒有離開紀錄，包含只有安靜模式紀錄的情況；見[運作狀態](../supervision-host.md#postures)）：無介面的監督工作階段會接收監督分支可接手的喚醒，且絕不因例行結果喚醒你，因此到達你的喚醒較少；檢查喚醒、決策喚醒及它無法接手的其他內容，仍完全依上述方式到達你。
+{opencode,omp,grok,codex,agy} 1. 有人值守（沒有離開紀錄；見[運作狀態](../supervision-host.md#postures)）：每次喚醒都完全依上述方式到達你，因為此執行環境尚無經驗證的對話鏡像可餵入監督工作階段。
+{claude,cursor}    `supervision-host: branch-outcome: ...` 表示它已處理一次喚醒，並替你記錄了應呈報船長的結果：請執行 `bin/fm-wake-drain.sh`，以 Firstmate 身分，從任務目前狀態處理其 `BRANCH OUTCOMES` 區段的每個項目，因為每項都會註明多久以前記錄（告知船長、將已就緒的工作落地或合併、回答或升級決策，或處理阻礙；回覆只涵蓋仍未結案的項目，已解決的項目，例如後來已合併的 PR，視同從未列出），之後執行它印出的 `mark-processed` 確認指令；在確認前，每次清空佇列都會再次呈現它們。
+{claude,cursor}    `supervision-host: the supervision session could not take this wake ...` 表示該喚醒由你負責：依上述方式處理。
+{claude,cursor}    失敗回合可能附帶 `supervision-host:` 健康狀態註記，指出引擎重複錯誤：有需要時告知船長，並照常處理交還的喚醒；冷卻期間，之後有人值守狀態下的關閉事件會原樣到達你。
+{claude,cursor}    例行結果絕不會喚醒你；下一次清空佇列，只會在 `BRANCH OUTCOMES, ROUTINE` 下列出可見的例行結果供你掌握，不需確認。靜默列不會出現在該處，但仍可透過 `bin/fm-branch-outcome.sh list` 取得。
+2. 離開（存在離開紀錄，且沒有常駐程序執行）：主機將每次喚醒交給無介面的離開模式工作階段，由它依紀錄執行監督分支契約，而你維持停駐。
+{claude}    只有主機交還的喚醒才會到達你，以 `Stop hook feedback` 附帶關閉事件及一行 `supervision-host: <why>` 的形式呈現。
+{cursor,opencode,omp,agy}    只有主機交還的喚醒才會到達你，以 `watcher` 後續回合附帶關閉事件及一行 `supervision-host: <why>` 的形式呈現。
+{grok}    只有主機交還的喚醒才會到達你，以啟動程序的背景工作完成通知呈現；輸出會附帶關閉事件及一行 `supervision-host: <why>`。
+{codex-checkpoint}    只有主機交還的喚醒才會到達你，以檢查點輸出附帶關閉事件及一行 `supervision-host: <why>` 的形式呈現。
+{codex-checkpoint}    只要離開紀錄存在，每個檢查點就會使用較長的離開模式上限（`FM_CODEX_WATCH_CHECKPOINT_AWAY`，預設 3600 秒，仍受主機停駐上限約束；見 [`supervision-host.md`](../supervision-host.md#the-park-boundary)），因此除非船長中斷檢查點，否則船長訊息會等到檢查點返回才處理。
+   該喚醒屬於自動監督，不代表船長回來了：請在離開運作狀態下清空佇列並處理，絕不要因此執行返回流程。
+   返回之後，若某個回合出現 `supervision-host:` 列，指出船長在該回合進行中返回，就代表該回合有返回簡報未涵蓋的可見結果，不論該喚醒已由主機處理或被交還：將後續每一行 `supervision-host: outcome ...` 轉告船長（這些列也會保留在 `bin/fm-branch-outcome.sh list` 中），再清空並處理任何待處理喚醒，最後才確認。
+   每個這類可見結果也會成為佇列中的 `check: supervision-host outcome <n> ... was recorded after the captain returned` 喚醒，直到確認前都會由清空操作呈現：不論哪個先到，每項結果只轉告一次；若有對應的 `BRANCH OUTCOMES` 項目，也要一起確認。靜默結果會留在儲存區，但不產生交接列或 check 喚醒。
+{claude,cursor,agy} 3. `supervision-host: cycle boundary ...` 表示主機已因到達上限而結束停駐：執行 `bin/fm-wake-drain.sh`、處理它呈現的所有內容、執行印出的確認指令（空佇列會印出 `--ack-through 0`），再結束回合；下一次停駐會在該回合結束時開始。
+{opencode,omp} 3. `supervision-host: cycle boundary ...` 表示主機已因到達上限而結束停駐，且下一次停駐已開始：執行 `bin/fm-wake-drain.sh`、處理它呈現的所有內容，再執行印出的確認指令（空佇列會印出 `--ack-through 0`）。
+{grok} 3. `supervision-host: cycle boundary ...` 表示主機已因到達上限而結束停駐：執行 `bin/fm-wake-drain.sh`、處理它呈現的所有內容、執行印出的確認指令（空佇列會印出 `--ack-through 0`），再以相同背景主機呼叫重新啟動。
+{codex-park} 3. 安靜的主機停駐邊界會保留同一個監看器與復原世代，不呼叫模型。
+{codex-checkpoint} 3. 主機的停駐邊界會以檢查點的一般 `checkpoint: no actionable wake within <n>s` 列返回；依上述步驟 5 處理。
+4. 受防護指令若以 6 結束，並指出分支 actor 的租約，表示監督工作階段此刻正在處理該任務：不要動該租約，等它在回合結束時釋放後再重試。
+5. 離開模式工作階段記錄、應呈報船長的結果，會留在結果儲存區，直到返回時清空佇列才呈現；返回簡報（`bin/fm-afk-return.sh`）會計算數量，並指引你到 `BRANCH OUTCOMES` 區段處理與確認（[船長結果](../supervision-host.md#captain-outcomes)）。
+{claude,grok} 6. `/afk` 在此只寫入紀錄（`bin/fm-afk-launch.sh start-native` 會拒絕在此主目錄啟動離開模式常駐程序）；`/quiet` 則依照 [quiet 技能](../../.agents/skills/quiet/SKILL.md)。
+{cursor,opencode,omp,codex,agy} 6. `/afk` 在此只寫入紀錄（`bin/fm-afk-launch.sh start` 會拒絕在此主目錄啟動離開模式常駐程序）；`/quiet` 則依照 [quiet 技能](../../.agents/skills/quiet/SKILL.md)。
+{grok} 7. 工具執行前的防護機制不會分類主機指令，因此必須維持為上述單一背景呼叫：絕不可使用 shell `&`、管線，或與其他指令綁在一起。

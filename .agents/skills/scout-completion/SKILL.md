@@ -1,16 +1,17 @@
 ---
 name: scout-completion
-description: Load when a scout reports completion, presents a visual artifact for iteration, or is being considered for promotion to implementation.
+description: 當 scout 回報完成、提出視覺產物供反覆修改，或考慮將它提升為實作工作時載入。
 user-invocable: false
 metadata:
   internal: true
 ---
 
-# Scout outcome and promotion
+<a id="scout-outcome-and-promotion"></a>
+# Scout 成果與提升為實作
 
-A completed scout must leave a self-contained report before its scratch worktree can be discarded; read and relay its findings, record the report as the Done artifact, and re-evaluate the queue.
-A report may recommend implementation but does not authorize it.
-Before treating the investigation or any visual review as complete, load `captain-hold-lifecycle`; teardown enforces that shared completion gate.
-When a scout's deliverable is a visual artifact the captain will iterate on, keep it alive and follow the crew-hosted Lavish board contract in `docs/configuration.md` rather than arming or polling the board from firstmate.
-When implementation is separately authorized, promote the existing scout through `bin/fm-promote.sh` rather than creating a duplicate task.
-The promoted worker must inventory scratch state, return to a clean copy of the task's base (its recorded base branch, else the default branch), carry over only intended fix changes, create the ship branch, and follow the project's selected delivery path while leaving scratch commits and debug edits behind and turning a reproduced bug into the regression test.
+已完成的 scout 必須先留下可獨立閱讀的報告，才能捨棄暫存 worktree；請閱讀並轉達發現，將報告記為 Done 產物，並重新評估佇列。
+報告可以建議實作，但不代表授權實作。
+認定調查或任何視覺審查完成之前，載入 `captain-hold-lifecycle`；清理流程會強制執行這道共用完成關卡。
+如果 scout 的交付成果是供船長反覆修改的視覺產物，請讓它持續可用，並遵循 `docs/configuration.md` 中由船員代管的 Lavish 看板契約，不要從 firstmate 啟用或輪詢看板。
+實作另行獲得授權後，透過 `bin/fm-promote.sh` 提升現有 scout，不要建立重複工作。
+提升後的工作 Agent 必須盤點暫存狀態，回到該工作基準的乾淨副本（已記錄的基底分支，否則使用預設分支），只帶入預期的修正變更，建立 ship 分支，遵循專案選定的交付路徑，留下暫存提交與除錯編輯，並將已重現的問題轉成回歸測試。

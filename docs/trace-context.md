@@ -1,120 +1,130 @@
-# Native W3C trace-context propagation
+<a id="native-w3c-trace-context-propagation"></a>
+# 原生 W3C 追蹤上下文傳播
 
-Firstmate can propagate a W3C [`traceparent`](https://www.w3.org/TR/trace-context/) to every agent it spawns so an external observer can identify each task as exactly one trace and correlate everything that task runs under that one identity.
-The trace boundary is the task: a persistent Secondmate is routing infrastructure with its own agent identity, never a shared trace root for the unrelated tasks routed through it.
-The capability is default-off, source-owned, vendor-neutral, and deliberately narrow.
-This document is the rationale and current-behavior guide; `docs/configuration.md` owns the configuration schema, `bin/fm-trace-context-lib.sh`'s header owns the exact mechanics, and [`verification/trace-context.md`](verification/trace-context.md) records the repeatable test evidence.
+Firstmate 可將 W3C [`traceparent`](https://www.w3.org/TR/trace-context/) 傳播給每個啟動的 Agent，讓外部觀察者將每個任務辨識為恰好一條 trace，並在同一身分下關聯該任務執行的所有工作。
+追蹤邊界就是任務：持續存在的二副（Secondmate）是路由基礎設施，具有自己的 Agent 身分，絕不是經由它路由之無關任務的共用追蹤根。
+此能力預設關閉、由原始碼定義、不依賴廠商，且範圍刻意維持狹窄。
+本文件說明設計理由與目前行為；`docs/configuration.md` 定義設定結構，`bin/fm-trace-context-lib.sh` 的標頭定義精確機制，[`verification/trace-context.md`](verification/trace-context.md) 則記錄可重複的測試證據。
 
-## Why this is a source change at all
+<a id="why-this-is-a-source-change-at-all"></a>
+## 為何需要修改原始碼
 
-Firstmate's durable operational artifacts already let a downstream observer derive logical task identity and lifecycle.
-The source capability an observer cannot reconstruct after launch is a task-scoped trace id delivered in the agent's environment before launch and recorded under the same identity in task metadata.
-This feature adds only that carrier seam.
+Firstmate 持久保存的操作成品，已經讓下游觀察者能推導邏輯任務身分與生命週期。
+觀察者無法在啟動後重建的原始碼能力，是在 Agent 啟動前透過環境傳入任務範圍的追蹤 ID，並在任務中繼資料中記錄相同身分。
+此功能只新增這個載體接點。
 
-## What it does
+<a id="what-it-does"></a>
+## 功能行為
 
-When enabled, for each spawn Firstmate resolves one W3C `traceparent` carrier for the task - minted as a fresh root on the task's first spawn and reused verbatim from the meta on relaunch - and:
+啟用後，Firstmate 會在每次 spawn 時，為任務解析一個 W3C `traceparent` 載體：任務第一次 spawn 時建立全新追蹤根，重新啟動時則原樣重用中繼資料中的值，並且：
 
-- forms it as `00-<32 hex trace id>-<16 hex span id>-<2 hex flags>`, with random ids for a new root;
-- delivers it as the `TRACEPARENT` environment variable immediately before launch, through the same backend-specific environment channel that already ships `GOTMPDIR`; and
-- records the identical value as `traceparent=` in `state/<id>.meta`.
+- 使用 `00-<32 hex trace id>-<16 hex span id>-<2 hex flags>` 格式，新追蹤根採用隨機 ID；
+- 在啟動前立即透過既有傳送 `GOTMPDIR` 的後端專屬環境通道，以 `TRACEPARENT` 環境變數傳入；以及
+- 在 `state/<id>.meta` 中，以 `traceparent=` 記錄完全相同的值。
 
-`TRACEPARENT` as an environment variable is a Firstmate convention carrying a W3C-formatted value: W3C Trace Context standardizes the `traceparent` HTTP header, not an env var, and OpenTelemetry SDKs do not read it from the environment automatically, so a downstream observer must explicitly read this env value or the `traceparent=` meta field.
-This feature parents no SDK span by itself.
+以環境變數 `TRACEPARENT` 攜帶 W3C 格式值，是 Firstmate 的慣例：W3C Trace Context 標準化的是 `traceparent` HTTP 標頭，不是環境變數；OpenTelemetry SDK 也不會自動從環境讀取它，因此下游觀察者必須明確讀取此環境值或 `traceparent=` 中繼資料欄位。
+此功能本身不會替任何 SDK span 設定父項。
 
-Because the injected carrier and the recorded carrier are the same string, an observer that reads the metadata reconstructs exactly the identity the child received.
-The delivery sits at the unconditional pre-launch environment site, so it covers ship and scout spawns across `claude`, `codex`, `opencode`, `pi`, `pi-signed`, `grok`, `kimi`, `cursor`, `gemini`, `muse`, `rovo`, `agy`, `devin`, `commandcode`, `polytoken`, `cortex`, `kiro`, and `hermes`, plus Secondmate spawns across that same set except the deliberately crewmate-only `gemini`, `muse`, `rovo`, `devin`, `commandcode`, `polytoken`, `cortex`, `kiro`, and `hermes` adapters.
-This is the same coverage `GOTMPDIR` already has and requires no trace-specific `launch_template()` behavior.
-Ship and scout spawns reach that site on every pane-typed spawn backend (`tmux`, `herdr`, `zellij`, `orca`, `cmux`, `paseo`, `rex`); a Secondmate reaches it on every pane backend that accepts a Secondmate spawn (`tmux`, `herdr`, `zellij`, `rex`), because `bin/fm-spawn.sh` rejects a Secondmate on `orca`, `cmux`, and `paseo`.
-`t3code` has no pane, so its `claude` and `codex` ship, scout, and Secondmate spawns receive the same `TRACEPARENT` value under the same conditions through the backend's [per-directory harness environment](t3code-backend.md#per-directory-harness-environment) instead.
+注入與記錄的載體是同一字串，因此讀取中繼資料的觀察者，能精確重建子程序收到的身分。
+傳遞位於無條件執行的啟動前環境設定位置，因此涵蓋 `claude`、`codex`、`opencode`、`pi`、`pi-signed`、`grok`、`kimi`、`cursor`、`gemini`、`muse`、`rovo`、`agy`、`devin`、`commandcode`、`polytoken`、`cortex`、`kiro` 與 `hermes` 的 ship 與 scout 啟動，也涵蓋相同集合的二副啟動，但刻意僅支援船員的 `gemini`、`muse`、`rovo`、`devin`、`commandcode`、`polytoken`、`cortex`、`kiro` 與 `hermes` 配接器除外。
+這與 `GOTMPDIR` 既有涵蓋範圍相同，不需要追蹤專用的 `launch_template()` 行為。
+ship 與 scout 啟動在所有以面板鍵入的 spawn 後端（`tmux`、`herdr`、`zellij`、`orca`、`cmux`、`paseo`、`rex`）都會到達該位置；二副則會在所有接受二副啟動的面板後端（`tmux`、`herdr`、`zellij`、`rex`）到達，因為 `bin/fm-spawn.sh` 會在 `orca`、`cmux` 與 `paseo` 拒絕二副。
+`t3code` 沒有面板，因此其 `claude` 與 `codex` 的 ship、scout 與二副啟動，會在相同條件下，透過後端的[各目錄執行環境設定](t3code-backend.md#per-directory-harness-environment) 收到相同的 `TRACEPARENT` 值。
 
-### Remote Secondmate routes
+<a id="remote-secondmate-routes"></a>
+### 遠端二副路由
 
-A Secondmate on a [remote route](remote-secondmates.md) never reaches that export site in the parent's own process: the parent hands the launch to the configured host, which runs its own `bin/fm-spawn.sh` there.
-The identity is still the parent's, because the parent home holds the task metadata an observer reads.
-The parent therefore resolves the carrier against that task's own metadata under its own frozen decision - reused verbatim on relaunch, freshly rooted otherwise, never adopting the parent process's ambient `TRACEPARENT` - and passes it to the remote host, which exports it at the same unconditional pre-launch site and returns the carrier its endpoint actually holds.
-The parent records that returned value, so an already-alive remote endpoint that was not relaunched reports the identity its agent really received rather than one the parent merely intended.
-The remote host validates the delivered carrier as a strict W3C value before it can reach any pane, and a disabled parent passes nothing, leaving the remote launch identical to the untraced one.
-If the endpoint is already alive, no new launch or injection occurs; the parent still records any carrier that endpoint reports, even when the parent's current decision is `off`, so its metadata does not deny the running agent's actual identity.
-The enablement decision travels with it exactly as on the local path: the remote home inherits `config/trace-context` as declared inherited material and the new Secondmate process receives the parent's frozen `FM_TRACE_CONTEXT=on|off` snapshot.
+[遠端路由](remote-secondmates.md)上的二副，不會在父程序本身到達該 export 位置：父端將啟動交給設定的主機，由該主機執行自己的 `bin/fm-spawn.sh`。
+身分仍屬於父端，因為父主目錄保存觀察者會讀取的任務中繼資料。
+因此，父端會依自己的凍結決策，針對該任務自己的中繼資料解析載體：重新啟動時原樣重用，否則建立全新追蹤根，絕不採用父程序環境中現有的 `TRACEPARENT`。接著將載體傳給遠端主機，由其在相同的無條件啟動前位置 export，並回傳端點實際持有的載體。
+父端會記錄回傳值，因此已存活且未重新啟動的遠端端點，會回報其 Agent 真正收到的身分，而不是父端原本打算傳入的身分。
+遠端主機會在載體能到達任何面板之前，嚴格驗證它是合法 W3C 值；若父端停用功能，就不傳任何值，遠端啟動維持與未追蹤時相同。
+若端點已存活，就不會重新啟動或注入；父端仍會記錄端點回報的任何載體，即使父端目前決策為 `off`，讓其中繼資料不會否認執行中 Agent 的實際身分。
+啟用決策的傳遞與本機路徑完全相同：遠端主目錄將 `config/trace-context` 作為宣告繼承項目接收，而新的二副程序會收到父端凍結的 `FM_TRACE_CONTEXT=on|off` 快照。
 
-## Root and recovery semantics
+<a id="root-and-recovery-semantics"></a>
+## 追蹤根與復原語意
 
-The point of these rules is one trace per task: never merge unrelated tasks, and never mint a second identity for the same task.
+這些規則的目的是每個任務一條 trace：絕不合併無關任務，也絕不為相同任務建立第二個身分。
 
-- **Root** - a spawn whose task meta holds no valid recorded carrier mints a fresh trace id, a fresh span id, and sampled flags (`01`).
-  This begins a new trace, one per task.
-  The spawning process's own ambient `TRACEPARENT` is never adopted: that value is the agent identity the process itself received at its launch, and a persistent Secondmate keeps it for its whole life while unrelated requests are routed through it.
-  Adopting it would chain every routed task into one ever-growing trace per Secondmate; instead each routed task roots its own trace.
-- **Recovery** - a valid `traceparent=` already recorded in the task's meta is reused verbatim, so a relaunched or recovered task keeps one stable identity across restarts rather than starting a second trace.
-  A corrupt recorded value is re-minted as a fresh root rather than propagated.
+- **追蹤根**：若 spawn 的任務中繼資料沒有有效的已記錄載體，就建立全新的 trace ID、span ID 與取樣旗標（`01`）。
+  這會開始新的 trace，每個任務一條。
+  絕不採用啟動程序自己環境中的 `TRACEPARENT`：那個值是程序本身啟動時收到的 Agent 身分，持續存在的二副會在整個生命週期保留它，同時將無關請求路由出去。
+  若採用它，就會將所有路由任務串成每個二副一條不斷成長的 trace；因此每個路由任務都建立自己的追蹤根。
+- **復原**：已記錄在任務中繼資料中的有效 `traceparent=` 會原樣重用，讓重新啟動或復原的任務，在重啟之間保有穩定身分，而非開始第二條 trace。
+  損毀的紀錄值會重新建立為全新追蹤根，不會繼續傳播。
 
-Because ambient `TRACEPARENT` is never read, the environment a supervisor happens to run under - a Secondmate's launch-time carrier, or an operator shell with a leftover `TRACEPARENT` - cannot leak into new task identities.
-Disabling propagation is an intentional trace boundary: a disabled home injects no carrier into a newly launched or relaunched agent even when the task meta already contains a valid `traceparent=`.
-An actual disabled relaunch regenerates the task meta without `traceparent=`, so a later enabled relaunch roots a new trace instead of resuming the identity from before the boundary; reusing an already-alive remote endpoint is not a relaunch and preserves the carrier that agent already holds.
+因為絕不讀取環境中現有的 `TRACEPARENT`，監督程式恰好處於何種環境——二副啟動時的載體，或留有 `TRACEPARENT` 的操作者 shell——都不會滲入新任務身分。
+停用傳播是刻意的追蹤邊界：停用的主目錄不會向新啟動或重新啟動的 Agent 注入任何載體，即使任務中繼資料已含有效的 `traceparent=`。
+真正的停用狀態重新啟動，會重新產生不含 `traceparent=` 的任務中繼資料，因此稍後啟用狀態下再重新啟動時，會建立新追蹤根，不會延續邊界之前的身分；重用已存活的遠端端點並非重新啟動，會保留該 Agent 已持有的載體。
 
-### Enablement is home-session-scoped
+<a id="enablement-is-home-session-scoped"></a>
+### 啟用狀態限定於主目錄工作階段
 
-Each locked `bin/fm-session-start.sh` run resolves that home's `config/trace-context` plus `FM_TRACE_CONTEXT` exactly once into session-scoped effective state.
-The decision is atomically published through a same-directory temporary file and bound to the current session lock, so a failed publication cannot reactivate a stale `on` record from an earlier session.
-Every spawn from that home reads only the frozen `on` or `off` decision.
-Later config or environment edits are ignored until that home starts a new session.
-Missing, stale, unreadable, invalid, or unsuccessfully published effective state defaults safely to `off`.
+每次加鎖執行 `bin/fm-session-start.sh` 時，會且只會一次將該主目錄的 `config/trace-context` 加上 `FM_TRACE_CONTEXT`，解析為工作階段範圍的有效狀態。
+決策透過同目錄暫存檔原子發布，並綁定目前工作階段鎖，因此發布失敗不會重新啟用先前工作階段過期的 `on` 紀錄。
+該主目錄的每次 spawn 只讀取凍結的 `on` 或 `off` 決策。
+後續設定或環境修改都會被忽略，直到該主目錄開始新的工作階段。
+有效狀態缺少、過期、無法讀取、無效或發布失敗時，都安全地預設為 `off`。
 
-When the primary launches a Secondmate, local or remote, it propagates `config/trace-context` into the Secondmate home and passes the primary session's frozen decision as a non-empty `FM_TRACE_CONTEXT=on|off` launch override.
-The Secondmate resolves that inherited override when its own home session starts.
-That flag is session-scoped enablement rather than durable configuration, so it is transferred at the launch convergence point - where the frozen decision is handed over with it - and left untouched by live convergence into an already-running home, on local and remote routes alike.
-What propagates is the enablement decision, never trace identity: a Secondmate launched while enabled receives its own task carrier from the primary - the Secondmate agent's identity, reused verbatim when the Secondmate itself is relaunched - and each worker it spawns roots its own per-task trace.
-A Secondmate launched while disabled keeps its workers untraced even if `config/trace-context` is present in its home.
-When enabled, a relaunch reuses the task's valid recorded carrier; a task without one roots a fresh trace.
-A duplicate Secondmate launch is refused before trace-context inheritance, so duplicate-launch preflight does not mutate the Secondmate home.
+主要 Agent 啟動本機或遠端二副時，會將 `config/trace-context` 傳到二副主目錄，並將主要工作階段的凍結決策，以非空的 `FM_TRACE_CONTEXT=on|off` 啟動覆寫值傳入。
+二副會在自己的主目錄工作階段開始時，解析這個繼承的覆寫值。
+該旗標是工作階段範圍的啟用狀態，而非持久設定，因此只在啟動收斂點傳送——凍結決策也在該處一起交接；對已執行主目錄進行即時收斂時不會觸碰它，本機與遠端路由皆然。
+傳播的是啟用決策，絕不是追蹤身分：在啟用狀態下啟動的二副，會從主要 Agent 收到自己的任務載體，也就是二副 Agent 的身分，二副本身重新啟動時原樣重用；而它啟動的每個工作 Agent，都會建立自己各任務的追蹤根。
+在停用狀態下啟動的二副，即使主目錄存在 `config/trace-context`，其工作 Agent 仍不會被追蹤。
+啟用時，重新啟動會重用任務有效的已記錄載體；沒有載體的任務則建立全新追蹤根。
+重複的二副啟動會在繼承追蹤上下文之前遭到拒絕，因此重複啟動預檢不會修改二副主目錄。
 
-Changing the setting across the whole fleet requires a manual full fleet restart so every home starts a new session and freezes the new decision.
-Firstmate does not monitor setting drift, detect mismatches, refuse launches, or automatically stop or restart any home.
+要變更整個艦隊的設定，必須手動完整重啟艦隊，讓每個主目錄開始新工作階段並凍結新決策。
+Firstmate 不會監控設定漂移、偵測不一致、拒絕啟動，或自動停止／重新啟動任何主目錄。
 
-## Sampling
+<a id="sampling"></a>
+## 取樣
 
-A new root sets the W3C trace flags to `01` (sampled).
-This is a deliberate, source-owned choice:
+新的追蹤根會將 W3C trace 旗標設為 `01`（已取樣）。
+這是刻意且由原始碼定義的選擇：
 
-- The capability is **opt-in** and default-off, so a home that enables it is asking for its spawns to be traced; an unsampled (`00`) root would produce a trace id that most downstream parent-based samplers drop, yielding nothing for the operator who opted in.
-- **A recorded carrier keeps its flags verbatim.**
-  Recovery reuses the task's recorded carrier byte-for-byte, flags included, so a task's sampling decision is stable across restarts.
-  Firstmate chooses the flag only when it mints a *root*, which is the only way a new carrier is created.
-- **Cost and privacy consequence.**
-  `01` records a sampling *decision*, and a conforming downstream parent-based sampler will honor it - but it does not by itself guarantee that any collector stores a span, and Firstmate emits no spans of its own; it only sets the flag on the carrier.
-  An operator who enables the capability and points sampling-respecting instrumentation at it should expect on the order of one trace per task to be recorded, at whatever cardinality and retention that instrumentation is configured for.
-  An operator who wants unsampled roots or head-sampling owns that downstream or via a later, explicitly-scoped option; Firstmate does not embed a sampler.
+- 此能力**需自行啟用**且預設關閉，因此主目錄啟用時，就是要求追蹤其啟動的工作；未取樣的（`00`）追蹤根會產生大多數下游依父項取樣器丟棄的 trace ID，讓選擇啟用的操作者得不到結果。
+- **已記錄載體原樣保留旗標。**
+  復原會逐位元組重用任務已記錄的載體，包含旗標，因此任務取樣決策在重新啟動之間維持穩定。
+  Firstmate 只在建立*追蹤根*時選擇旗標，這也是建立新載體的唯一方式。
+- **成本與隱私影響。**
+  `01` 記錄取樣*決策*，符合規範的下游依父項取樣器會遵從它；但它本身不保證任何收集器會儲存 span，Firstmate 也不發出自己的 span，只會設定載體旗標。
+  操作者若啟用此能力，並接上遵從取樣決策的監測工具，就應預期大約每個任務記錄一條 trace，其基數與保留時間由該監測工具的設定決定。
+  想要未取樣追蹤根或頭部取樣的操作者，須在下游處理，或透過日後明確限定範圍的選項達成；Firstmate 不內嵌取樣器。
 
-## Safety
+<a id="safety"></a>
+## 安全性
 
-- **Default-off.**
-  With no `config/trace-context` and no `FM_TRACE_CONTEXT`, a fresh spawn or actual relaunch injects nothing and writes no `traceparent=` line, so the generated meta and the launch environment are unchanged.
-  Reusing an already-alive remote endpoint records any carrier that endpoint reports without injecting a new one.
-  A locked session start makes the one config-file check, and each spawn sources one extra library and reads the frozen effective-state file, so the process is not literally byte-for-byte identical, but nothing an agent, an observer, or the task meta can see differs.
-- **What is and is not exposed.**
-  A Firstmate-*minted* root uses a random id and reads no prompt, path, task prose, credential, or arbitrary environment key, so Firstmate never *originates* sensitive data in the carrier.
-  Every carrier Firstmate injects is either such a mint or the same task's previously recorded carrier reused verbatim; ambient `TRACEPARENT` is never read, so no caller-controlled bytes enter a new carrier.
-  Exposure is bounded to that fixed-width carrier - it cannot carry a `tracestate`, an `OTEL_*` credential variable, or any arbitrary environment key, and there is no configurable or arbitrary command (only the fixed local `od`/`tr` for entropy).
-- **Fail-independent.**
-  Minting is a small local entropy pipeline: it reads a few bytes from `/dev/urandom` through the fixed local `od` and `tr` (resolved from PATH).
-  There is no configured provider command, no network, and no watchdog.
-  The normal cost is small, but `od`/`tr` are external processes, so there is no hard latency guarantee - this is not a guaranteed-negligible bound.
-  Any entropy or self-validation failure that returns omits the carrier for that spawn without aborting source work; a corrupt recorded carrier is re-minted as a fresh root rather than propagated (it is not an omission).
-  On pane backends, if the pre-launch carrier export fails, Firstmate omits the `traceparent=` metadata claim and still launches the task.
-  If a pane backend reports that failed trace input could not be cleared, Firstmate refuses to append the launch command rather than risk launching with an unknown partial carrier.
-  If recording the carrier fails after a pane export, Firstmate unsets `TRACEPARENT` in the launch command and still launches the task, so the child never receives an identity absent from its metadata.
-  T3 Code records the carrier before including it in the [per-directory harness environment](t3code-backend.md#per-directory-harness-environment); a recording failure omits the carrier, while an environment installation failure refuses the launch.
-- **Metadata-only.**
-  The value lives in the task's launch environment and in `state/<id>.meta`.
-  The [T3 environment contract](t3code-backend.md#per-directory-harness-environment) owns its overlay cleanup; teardown removes task state as before, and no schema migration is needed.
+- **預設關閉。**
+  沒有 `config/trace-context` 與 `FM_TRACE_CONTEXT` 時，全新 spawn 或真正重新啟動都不會注入內容，也不會寫入 `traceparent=` 行，因此產生的中繼資料與啟動環境不變。
+  重用已存活的遠端端點時，會記錄端點回報的任何載體，不注入新載體。
+  加鎖的工作階段啟動會進行一次設定檔檢查，每次 spawn 也會多載入一個函式庫並讀取凍結的有效狀態檔，所以程序不是字面上的逐位元組完全相同，但 Agent、觀察者或任務中繼資料可見的內容沒有差異。
+- **暴露與不暴露的資訊。**
+  Firstmate *建立*的追蹤根使用隨機 ID，不讀取提示、路徑、任務文字、憑證或任意環境鍵，因此 Firstmate 絕不會在載體中*產生*敏感資料。
+  Firstmate 注入的每個載體，不是這種新建立的值，就是同一任務先前記錄載體的原樣重用；絕不讀取環境現有的 `TRACEPARENT`，所以呼叫端控制的位元組不會進入新載體。
+  暴露範圍限定於這個固定寬度載體：它無法攜帶 `tracestate`、`OTEL_*` 憑證變數或任何任意環境鍵，也沒有可設定或任意指令（只有用來取得熵的固定本機 `od`／`tr`）。
+- **故障獨立。**
+  建立載體是小型本機熵管線：透過固定本機 `od` 與 `tr`（從 PATH 解析），從 `/dev/urandom` 讀取少量位元組。
+  沒有可設定的提供者指令、網路或 watchdog。
+  一般成本很小，但 `od`／`tr` 是外部程序，因此沒有硬性的延遲保證，不能保證時間上限可忽略。
+  任何會回傳的熵取得或自我驗證失敗，都只會省略該次 spawn 的載體，不中止原始工作；損毀的已記錄載體會重新建立為全新追蹤根，而不是傳播出去（這不是省略）。
+  在面板後端，若啟動前載體 export 失敗，Firstmate 會省略 `traceparent=` 中繼資料宣告，仍然啟動任務。
+  若面板後端回報無法清除失敗的追蹤輸入，Firstmate 會拒絕附加啟動指令，避免帶著不明的部分載體啟動。
+  若面板 export 後記錄載體失敗，Firstmate 會在啟動指令中 unset `TRACEPARENT`，仍然啟動任務，讓子程序絕不收到中繼資料不存在的身分。
+  T3 Code 會先記錄載體，再將其加入[各目錄執行環境設定](t3code-backend.md#per-directory-harness-environment)；記錄失敗會省略載體，環境安裝失敗則拒絕啟動。
+- **僅中繼資料。**
+  值存在於任務啟動環境與 `state/<id>.meta`。
+  [T3 環境契約](t3code-backend.md#per-directory-harness-environment) 定義其覆蓋層清理；teardown 與以往一樣移除任務狀態，不需要結構遷移。
 
-## Relationship to OpenTelemetry and later increments
+<a id="relationship-to-opentelemetry-and-later-increments"></a>
+## 與 OpenTelemetry 及後續增量的關係
 
-Firstmate learns nothing about OpenTelemetry, any exporter, collector, storage, or UI.
-It emits a standard W3C carrier and records the same identity; a downstream observer owns everything else and discovers active propagation from the home session's frozen decision or the `traceparent=` field.
-Native lifecycle-event emission, extra stable IDs, intake metadata, and any embedded OTLP are deliberately deferred until a running observer demonstrates a concrete fidelity gap that the derived artifacts cannot cover.
+Firstmate 不需理解 OpenTelemetry、任何匯出器、收集器、儲存區或 UI。
+它發出標準 W3C 載體並記錄相同身分；其餘都由下游觀察者負責，並從主目錄工作階段的凍結決策或 `traceparent=` 欄位，發現目前啟用的傳播。
+原生生命週期事件發出、額外穩定 ID、接收中繼資料與任何內嵌 OTLP，都刻意延後，直到執行中的觀察者證明有具體的還原精度缺口，且無法由推導成品補足。
 
-## Verification
+<a id="verification"></a>
+## 驗證
 
-Repeatable test evidence - the unit and spawn-path suites with exact commands and output - lives in [`verification/trace-context.md`](verification/trace-context.md).
+可重複的測試證據——單元與 spawn 路徑測試套件，以及精確指令和輸出——位於 [`verification/trace-context.md`](verification/trace-context.md)。

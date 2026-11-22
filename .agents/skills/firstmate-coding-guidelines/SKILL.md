@@ -1,7 +1,7 @@
 ---
 name: firstmate-coding-guidelines
 description: >-
-  Load before editing firstmate's shared, tracked material as defined by AGENTS.md section 1, whether working as firstmate directly or as a crewmate briefed on a firstmate-repo task.
+  在編輯 AGENTS.md 第 1 節定義的 firstmate 共用、受版本控制資料前載入，不論直接作為 firstmate 工作，或作為接到 firstmate 儲存庫任務簡報的船員。
 user-invocable: false
 metadata:
   internal: true
@@ -9,125 +9,125 @@ metadata:
 
 # firstmate-coding-guidelines
 
-Load this before changing firstmate's shared, tracked material, as defined by `AGENTS.md` section 1.
-It exists because `AGENTS.md` grew from 585 to 958 lines between its last two restructures, entirely from conditional detail added inline instead of routed to its right home.
-Applying the rules below on every change is what keeps that from happening again.
+變更 `AGENTS.md` 第 1 節定義的 firstmate 共用、受版本控制資料前，先載入本技能。
+它存在的原因是，`AGENTS.md` 在上兩次重構之間從 585 行增加到 958 行，完全來自把條件細節直接加進內文，而未路由至適當位置。
+每次變更都套用下列規則，才能避免重演。
 
-## Knowledge-placement decision tree
+## 知識放置決策樹
 
-Before writing a new fact anywhere in this repo, ask where it belongs, in this order.
+在此儲存庫任何地方寫入新事實前，依序詢問它屬於哪裡。
 
-1. Does the firstmate AGENT need this on every session or every turn to operate?
-   If yes: `AGENTS.md`, inline.
-2. Does the agent need it only in a nameable situation - a spawn, a recovery, a specific wake type, a specific lifecycle step?
-   If yes: an agent-only skill under `.agents/skills/`, whose description states its load trigger; leave a one-line inline pointer in `AGENTS.md` only when an always-loaded rule must name the skill.
-3. Is it public product, setup, or user/operator reference?
-   If yes: the surface classified for that audience in [`docs/documentation-audiences.md`](../../../docs/documentation-audiences.md), limited to current behavior, setup, supported limits, stable invariants, concise rationale, and current verification entry points.
-4. Is it contributor/maintainer architecture?
-   If yes: the classified maintainer-architecture owner for stable ownership, extension points, mechanism boundaries, and safety rationale.
-5. Is it active reusable verification for a current guarantee?
-   If yes: an explicitly classified maintainer-verification record may keep current dates, versions, exact commands, and exact output.
-6. Is it task or incident evidence - chronology, transcripts, branches, temporary paths, failed hypotheses, or delivery proof?
-   If yes: keep it in the private task report or PR evidence by default, after distilling every unique current fact into its authoritative owner.
-7. Is it mechanics - exact flags, exact commands, exact paths?
-   If yes: the script's own header comment plus its `--help` output, not prose in `AGENTS.md`, a skill, or a second documentation owner.
+1. firstmate **Agent** 是否每個工作階段或每回合都需要它才能運作？
+   若是：放在 `AGENTS.md` 內文。
+2. Agent 是否只在可命名情境需要它，例如 spawn、復原、特定喚醒類型、特定生命週期步驟？
+   若是：放入 `.agents/skills/` 下僅供 Agent 的技能，description 說明載入觸發條件；只有始終載入的規則必須點名技能時，才在 `AGENTS.md` 留一行指標。
+3. 它是否是公開產品、設定，或使用者／操作人員參考？
+   若是：放入 [`docs/documentation-audiences.md`](../../../docs/documentation-audiences.md) 針對該受眾分類的介面，僅限目前行為、設定、支援限制、穩定不變條件、精簡理由與目前驗證進入點。
+4. 它是否是貢獻者／維護者架構？
+   若是：放入已分類的維護者架構負責文件，記錄穩定擁有權、擴充點、機制邊界與安全理由。
+5. 它是否是目前保證的有效、可重用驗證？
+   若是：明確分類的維護者驗證紀錄可保留目前日期、版本、精確命令與精確輸出。
+6. 它是否是任務或事件證據，例如時間線、逐字紀錄、分支、暫存路徑、失敗假設或交付證明？
+   若是：先把每項獨有的目前事實提煉到權威負責文件，預設將證據留在私有任務報告或 PR 證據。
+7. 它是否是機制細節，例如精確旗標、命令、路徑？
+   若是：放在指令碼自己的檔頭註解加 `--help` 輸出，不放在 `AGENTS.md`、技能或第二份文件負責來源的文字中。
 
-Stop at the first tier that answers yes.
-Do not place a fact at a more convenient tier than the one this tree gives you.
-The machine-consumed inventory in [`docs/documentation-audiences.json`](../../../docs/documentation-audiences.json) is the single classification owner for maintained prose surfaces; do not add parallel front matter or a second audience list.
+第一個回答為是的層級就停止。
+不要把事實放到比決策樹指定位置更方便的層級。
+[`docs/documentation-audiences.json`](../../../docs/documentation-audiences.json) 的機器使用清單，是受維護文字介面的唯一分類負責來源；不要新增平行 front matter 或第二份受眾清單。
 
-## One-owner rule
+## 單一負責來源規則
 
-Every contract - a data format, a state machine, a decision procedure - is stated in full exactly once.
-Every other mention of it is a one-line cross-reference, never a restatement.
-A single deliberate one-line reinforcement at a genuine risk point is allowed, for example a "don't forget X" placed exactly where forgetting X is costly.
-Restating the contract's substance a second time is not allowed: the two copies will drift the moment only one is edited.
-When you touch a contract, patch, replace, or prune the owner's existing language rather than appending a new clause or paragraph wherever possible, then grep the repo for its other mentions and update the cross-references, not duplicate the change into a second full copy.
+每個契約，包括資料格式、狀態機與決策程序，都只能在恰好一處完整陳述。
+其他任何提及都只能是一行交叉參照，絕不重述。
+允許在真正風險點放一行刻意強化，例如正好在忘記 X 會付出代價的位置放「別忘記 X」。
+不允許第二次重述契約實質內容：一旦只編輯其中一份，兩份就開始漂移。
+變更契約時，盡可能修補、取代或精簡負責來源既有用語，而非到處附加新條款或段落；接著搜尋儲存庫其他提及並更新交叉參照，不要把變更複製到第二份完整副本。
 
-## Inline-stub pattern
+## 內文簡短指標模式
 
-When content moves out of `AGENTS.md` into a skill, decide what stays behind by asking one question: what must survive with no skill loaded?
-That is the trigger condition for loading the skill, plus any safety-critical fact that fires on a wake the skill itself is not loaded for.
-Everything else - the procedure, the mechanism, the surrounding detail - moves out completely.
-Do not leave a partial restatement behind "just in case".
-A partial copy is exactly the duplication the one-owner rule forbids.
-The model to copy is `AGENTS.md` section 8's "Away-mode and quiet-mode stub": it keeps only the skill-invocation triggers inline and points everything else at the `/afk`, `/quiet`, and `away-quiet-supervision` skills.
+內容從 `AGENTS.md` 移到技能時，用一個問題決定留下什麼：沒有載入任何技能時，哪些資訊仍必須存在？
+答案是技能載入觸發條件，加上那些會在尚未載入該技能的喚醒中觸發、且對安全關鍵的事實。
+其他全部，包括程序、機制與周邊細節，都完整移出。
+不要「以防萬一」留下部分重述。
+部分副本正是單一負責來源規則禁止的重複。
+可仿照 `AGENTS.md` 第 8 節「離開模式與安靜模式簡短指標」：內文只保留技能呼叫觸發條件，其餘全部指向 `/afk`、`/quiet` 與 `away-quiet-supervision` 技能。
 
-## Size discipline
+## 篇幅紀律
 
-Apply the decision tree above to every line you are about to add to `AGENTS.md`.
-If an addition needs more than a few lines of conditional detail (detail that matters only in a specific situation) or reference detail (a wire format, an exact schema, historical rationale), you are almost certainly adding it to the wrong file.
-`AGENTS.md`'s token cost is paid by every session of every fleet member, every time, whether or not that session ever hits the situation the new lines describe.
-A skill's cost is paid only by the sessions that actually load it.
-When in doubt, write the fact into the skill or doc first by patching that owner's existing language, and add only the one-line trigger to `AGENTS.md`.
+對即將新增到 `AGENTS.md` 的每一行，都套用上述決策樹。
+若新增內容需要超過幾行條件細節（只在特定情境重要）或參考細節（傳輸格式、精確結構描述、歷史理由），幾乎可以確定加錯檔案。
+`AGENTS.md` 的 token 成本，每個艦隊成員每個工作階段都必須每次支付，不論是否真的遇到新行描述的情境。
+技能成本只有實際載入的工作階段才支付。
+不確定時，先修補技能或文件負責來源的既有用語來寫入事實，`AGENTS.md` 只加一行觸發指標。
 
-## Trigger hygiene
+## 觸發條件維護
 
-A new skill is dead weight if nothing loads it.
-Every new skill needs its load trigger declared in its description, which is the always-loaded trigger index; add an inline `AGENTS.md` pointer only in the operating section whose always-loaded rule must name it.
-State the trigger as a condition ("load before X", "load on Y wake"), never as a vague pointer.
-Briefs for tasks that touch firstmate's own tracked material should tell the crewmate to load this skill.
-`bin/fm-brief.sh`'s `REPO` argument is a caller-supplied string, while its optional `--project` directory enables lineage-based self-repository detection for the publication gate (`bin/fm-role-lib.sh`).
-The scaffold does not add this skill's load instruction; firstmate adds it to firstmate-repo briefs by hand.
-`CONTRIBUTING.md`'s "Development" section carries the same instruction as a durable reminder.
+新技能若沒有任何東西載入，就是無效負擔。
+每個新技能都需要在 description 宣告載入觸發條件，因為它是始終載入的觸發索引；只有操作區段的始終載入規則必須點名它時，才加入 `AGENTS.md` 內文指標。
+將觸發寫成條件（「X 前載入」、「Y 喚醒時載入」），不要寫成模糊指標。
+涉及 firstmate 自己受版本控制資料的任務簡報，應告訴船員載入此技能。
+`bin/fm-brief.sh` 的 `REPO` 引數是呼叫端提供的字串，選用 `--project` 目錄則啟用以血緣為基礎的自身儲存庫偵測，供發布關卡使用（`bin/fm-role-lib.sh`）。
+骨架不會加入本技能載入指示；firstmate 要手動加到 firstmate 儲存庫簡報。
+`CONTRIBUTING.md` 的「開發」區段也有相同指示，作為持久提醒。
 
-## Compatibility and enforcement
+## 相容性與強制執行
 
-Before changing shared tracked behavior, review every affected supported primary harness and runtime backend rather than checking only the adapters active in the current fleet.
-Mark an axis not applicable only after inspecting its integration surface, and update the corresponding verification evidence when behavior changes.
+變更共用、受版本控制行為前，審查每個受影響且支援的主 Agent 執行環境與執行階段後端，不要只檢查目前艦隊正在使用的配接器。
+只有檢查其整合介面後，才能將某軸標為不適用；行為變更時，更新相應驗證證據。
 
-For critical safety, routing, startup, and supervision infrastructure, prefer deterministic and idempotent enforcement over relying on agent memory alone.
-Keep instructions as the authority and discovery layer, but make repeated execution converge safely and make invalid or unsafe states fail closed wherever the runtime can enforce them.
+對關鍵安全、路由、啟動與監督基礎設施，優先使用可確定重現且具冪等性的強制機制，不只仰賴 Agent 記憶。
+保留指示作為權威與探索層，但讓重複執行安全收斂；只要執行階段能強制，就讓無效或不安全狀態採拒絕方式失敗。
 
-### Harness-dependent checks
+### 依賴執行環境的檢查
 
-This section is the single owner of the rule and of how to satisfy it.
+本節是此規則與滿足方式的唯一負責來源。
 
-A check is harness-dependent when its verdict comes from something the vendor emits: a process name, rendered output, a spinner or keybind glyph, a banner, or a key the harness binds.
-Anything in that class must be proven end to end against the real harness, because a stub or fake agent can only confirm the assumption already written into the stub.
-That proof is authorized to spend tokens; the cost is small against a check that silently stops working.
+當判定來自供應商輸出的事物，例如程序名稱、畫面輸出、旋轉指示器或按鍵符號、橫幅，或執行環境綁定的按鍵，該檢查就是依賴執行環境。
+這一類任何項目都必須對真正執行環境做端到端證明，因為 stub 或假 Agent 只能確認已寫進 stub 的假設。
+此證明獲授權可花費 tokens；與默默失效的檢查相比，成本很小。
 
-Build the check on the most structural signal that answers the question, and prefer a kernel or protocol fact over anything a release note could change.
-When a rendered surface is genuinely the only source, read more than one independent signal and let any of them carry a positive verdict, so no single vendor string is load-bearing.
-Where a surface signal is unavoidable, back it with a guard that fails loudly naming the harness and version rather than degrading quietly.
+以能回答問題、最具結構性的訊號建構檢查，核心或協定事實優先於任何可能被發行說明改變的內容。
+畫面確實是唯一來源時，讀取多個獨立訊號，讓任一訊號都能提供正向判定，避免單一供應商字串成為唯一依據。
+無法避免介面訊號時，搭配會明確指出執行環境與版本而大聲失敗的防護，不要悄悄降級。
 
-Every such check needs two tests, because they fail for different reasons:
+每項這類檢查都需要兩種測試，因為失敗原因不同：
 
-- A portable regression in `tests/` that pins the logic with real processes and no harness, so CI enforces the classifier everywhere it runs tmux.
-  Drive the signals apart deliberately and assert the verdict survives losing one; assert the divergence itself so the case cannot go quietly vacuous.
-  Confirm which signal a given construction actually blinds on each supported platform rather than assuming, because the same trick can break different sources on macOS and Linux.
-- A live guard in the `live-harness-optin` family (`bin/fm-test-run.sh`) that exercises every INSTALLED harness for real and fails naming the harness and version.
-  Report an absent harness explicitly rather than passing silently over it, and refuse a pass that checked nothing.
-  Open it with `fm_live_gate` from `tests/lib.sh`, which is the single owner of that decision: a guard that spends no model tokens runs by default wherever its tools are installed, a guard that submits prompts stays opt-in, and its own variable or `FM_LIVE` forces it on (an absent tool then fails rather than skips) or off.
-  The portable serial CI lane has no credentials and installs the public Pi package, so token-free guards exercise the available Pi surfaces while unavailable tools capability-skip; run a prompt-submitting guard after every harness upgrade and before trusting refreshed per-harness evidence.
+- `tests/` 中可攜式回歸測試，使用真實程序、不用執行環境來固定邏輯，讓 CI 在所有執行 tmux 的地方強制分類器行為。
+  刻意讓訊號分歧，斷言少一個訊號時判定仍成立；也斷言分歧本身，避免案例悄悄變成空洞測試。
+  確認每種建構在各支援平台實際遮蔽哪個訊號，不要假設，因為同一技巧在 macOS 與 Linux 可能破壞不同來源。
+- `live-harness-optin` 家族（`bin/fm-test-run.sh`）的即時防護檢查，實際測試每個**已安裝**執行環境，失敗時指出執行環境與版本。
+  明確回報未安裝執行環境，不要默默略過當作通過；若什麼都沒檢查，就拒絕通過。
+  用 `tests/lib.sh` 的 `fm_live_gate` 開始，它是該決策唯一負責來源：不花模型 tokens 的防護在工具已安裝處預設執行，會送提示的防護維持自行選用，而自身變數或 `FM_LIVE` 可強制開啟（工具缺少時變成失敗而非略過）或關閉。
+  可攜式循序 CI 工作線沒有憑證，會安裝公開 Pi 套件，因此不耗 tokens 的防護測試可用 Pi 介面，不可用工具則依能力略過；每次執行環境升級後、信任更新的逐執行環境證據前，都執行送提示的防護。
 
-Record the dated per-harness result in `docs/verification/runtime-backends.md`, and point at the live guard as the command that refreshes it, rather than leaving a version-scoped observation to rot into a false claim.
+在 `docs/verification/runtime-backends.md` 記錄附日期的逐執行環境結果，並指向即時防護作為更新命令，不要讓特定版本觀察腐化成錯誤宣稱。
 
-## Documentation change review
+## 文件變更審查
 
-For every changed maintained prose surface, identify its inventory audience, authoritative owner, current-behavior relevance, destination for supporting evidence, and any unique safety fact that removal could lose.
-Move or delete evidence only after the current owner and regression pointer are verified.
-After all documentation, review-fix, and lint-fix commits, review the complete branch diff again against those criteria rather than reviewing only the latest commit.
-Run `bin/fm-doc-audience-check.sh`; it enforces classification, README setup routing, local link targets, and owner pointers without keyword-linting legitimate evidence prose.
+對每個變更的受維護文字介面，辨識清單受眾、權威負責來源、與目前行為的關聯、支持證據的去處，以及移除可能遺失的獨有安全事實。
+只有驗證目前負責來源與回歸指標後，才移動或刪除證據。
+所有文件、審查修正與 lint 修正提交完成後，依上述條件重新審查完整分支差異，不要只看最後一次提交。
+執行 `bin/fm-doc-audience-check.sh`；它強制分類、README 設定路由、本機連結目標與負責來源指標，不會以關鍵字 lint 誤傷合理證據文字。
 
-## No-mistakes test configuration
+## No-mistakes 測試設定
 
-Never configure a deterministic suite-walk `commands.test` in any repository's no-mistakes config, whether it selects the full suite, changed tests, a family, or a fixed script list.
-Targeted validation belongs to the no-mistakes evidence path, while CI owns broad deterministic regression coverage.
-Firstmate PR #3644 demonstrated the cost: pinning a 75-162-script walk took 32.7 minutes per validation, while removing it restored the 3.6-minute targeted-validation posture.
+絕不在任何儲存庫的 no-mistakes 設定中，將 `commands.test` 設為可確定重現的測試套件遍歷，不論選完整套件、變更測試、家族或固定指令碼清單。
+針對性驗證屬於 no-mistakes 證據路徑，廣泛可確定重現的回歸覆蓋由 CI 負責。
+Firstmate PR #3644 展示了成本：固定遍歷 75–162 支指令碼，每次驗證耗時 32.7 分鐘；移除後恢復 3.6 分鐘的針對性驗證方式。
 
-## Repo style rules
+## 儲存庫風格規則
 
-- Put one full sentence per line in tracked Markdown.
-- Never wrap multiple sentences onto one physical line.
-- Plain dash `-`, never an em dash.
-- Never add an agent name as a commit co-author.
-- `bin/*.sh` and `bin/backends/*.sh` must pass `shellcheck`.
-- Run Firstmate production-library tests and commands that source `bin/` scripts under `bash` explicitly, never through the tool shell's default interpreter.
-- Run `bin/fm-lint.sh` before treating a script change as done; it is the single owner of the lint definition that CI and the no-mistakes pre-push gate both invoke, its own header owns what that definition covers, and it refuses to run under any other version of either linter.
-- When a task names a specific tool, implement the work with that tool, or explicitly flag the substitution and its new dependency footprint for review before shipping.
-- Colocate tests with the existing pattern in `tests/`, name them `<subject>.test.sh`, and extend an existing script rather than inventing a new runner.
-- Tests must exercise behavior through an executable or public interface and must never assert implementation-source bytes, including through parsers, regexes, snapshots, or indirect wrappers.
-- A maintainer-verification record under `docs/verification/` records active empirical facts, not assumptions or task chronology.
-- Include the date, version, exact commands run, and exact output needed to support the current guarantee.
-- Keep incident chronology and delivery evidence in private task reports or PR evidence unless a concise rationale is required to maintain a current safety boundary.
+- 受版本控制 Markdown 每行放一個完整句子。
+- 絕不將多個句子放在同一實體行。
+- 使用普通短橫線 `-`，絕不使用 em dash。
+- 絕不把 Agent 名稱加為提交共同作者。
+- `bin/*.sh` 與 `bin/backends/*.sh` 必須通過 `shellcheck`。
+- 執行 Firstmate 正式函式庫測試，以及會 source `bin/` 指令碼的命令時，明確使用 `bash`，絕不透過工具 shell 預設直譯器。
+- 將指令碼變更視為完成前，執行 `bin/fm-lint.sh`；它是 CI 與 no-mistakes pre-push 關卡共同呼叫之 lint 定義的唯一負責來源，涵蓋範圍由其檔頭負責，且任一 linter 版本不符就拒絕執行。
+- 任務點名特定工具時，用該工具實作；若要替換，交付前明確標示替代方式與新增相依套件範圍供審查。
+- 測試依 `tests/` 既有模式放在一起，命名 `<subject>.test.sh`，擴充既有指令碼，不要另造執行器。
+- 測試必須透過執行檔或公開介面驗證行為，絕不斷言實作原始碼位元組，包括使用解析器、正規表示式、快照或間接包裝器。
+- `docs/verification/` 下維護者驗證紀錄記錄目前有效的實證事實，不是推測或任務時間線。
+- 包含支持目前保證所需的日期、版本、執行的精確命令與精確輸出。
+- 事件時間線與交付證據留在私有任務報告或 PR 證據，除非維持目前安全邊界需要精簡理由。

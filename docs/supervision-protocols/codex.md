@@ -1,24 +1,24 @@
-Mode: Codex asynchronous Stop-hook-owned supervision.
+模式：由非同步 Stop hook 負責的 Codex 監督。
 
-This mode is selected only in a home that opts in with `config/codex-stop-park`, for the native session registered by `bin/fm-codex-stop-park.sh` on a verified Codex CLI version.
-Other sessions retain [the foreground checkpoint protocol](codex-checkpoint.md) unchanged.
+只有在主目錄透過 `config/codex-stop-park` 明確啟用，且原生工作階段已由 `bin/fm-codex-stop-park.sh` 在經過驗證的 Codex CLI 版本上註冊時，才會選用此模式。
+其他工作階段維持使用[前景檢查點協定](codex-checkpoint.md)，不受影響。
 
-When this session owns supervision:
-1. Drain first with `bin/fm-wake-drain.sh`.
-   Handle every presented wake, open decision and unread status, then run the exact `WAKE_ACK_REQUIRED` acknowledgement command.
-2. End the turn when handling is complete.
-   The asynchronous Stop hook owns one home-scoped watcher arm outside the model; never poll or manually re-arm a healthy park.
-3. A real event arrives through Codex's native thread queue as a `Firstmate watcher wake` message.
-   Drain first, handle the event and acknowledge it; the next Stop re-arms automatically.
-   Quiet watcher polls and supervision-host cycle boundaries remain inside the hook and cost no model calls.
-   When the last supervision source finishes with a final result still queued, the hook delivers that result once more with a message saying supervision has ended; drain, handle and acknowledge it, and do not run a foreground checkpoint.
-4. New user input runs immediately while the asynchronous hook stays parked.
-   The single-flight claim and watcher's existing singleton prevent a second watcher when that turn ends.
-5. A park recovery or failure message is actionable: drain and inspect `state/.codex-park.json`.
-   One failed arm is retried automatically; a repeated failure or failed queue delivery selects the existing foreground checkpoint protocol for the rest of this session.
-   The synchronous turn-end guard reports a missing owner or failed delivery, including on the next turn after the parked process dies.
-6. Away and quiet daemons retain supervision while `state/.afk` exists.
-   On a supervision-host home, the same hook parks on that host and preserves its existing posture and wake-routing decisions.
+當此工作階段負責監督時：
+1. 先執行 `bin/fm-wake-drain.sh`，清空待處理的喚醒佇列。
+   處理每一項呈現的喚醒事件、待決策項目及未讀狀態，再原樣執行 `WAKE_ACK_REQUIRED` 確認指令。
+2. 處理完成後結束回合。
+   非同步 Stop hook 會在模型外負責一個以主目錄為範圍的監看器啟動程序；停駐狀態正常時，絕不可輪詢或手動重新啟動。
+3. 真正的事件會透過 Codex 原生執行緒佇列，以 `Firstmate watcher wake` 訊息送達。
+   先清空佇列、處理事件並確認；下一次 Stop 會自動重新啟動監看。
+   無事件的監看器輪詢，以及 supervision-host 的週期邊界，都留在 hook 內處理，不會產生模型呼叫成本。
+   當最後一個監督來源完成，而最終結果仍在佇列中時，hook 會再傳送一次該結果，並附上監督已結束的訊息；請清空佇列、處理並確認，不要執行前景檢查點。
+4. 非同步 hook 停駐期間，新的使用者輸入仍會立即執行。
+   單次執行宣告（single-flight claim）與監看器既有的單例機制，會避免該回合結束時啟動第二個監看器。
+5. 停駐復原或失敗訊息需要處理：清空佇列，並檢查 `state/.codex-park.json`。
+   第一次啟動失敗會自動重試一次；若重複失敗或佇列投遞失敗，此工作階段剩餘時間會改用既有的前景檢查點協定。
+   同步的回合結束防護會回報負責者遺失或投遞失敗，包含停駐程序終止後的下一個回合。
+6. 只要 `state/.afk` 存在，離開與安靜模式的常駐程序就會持續負責監督。
+   在 supervision-host 主目錄中，相同的 hook 會停駐於該主機，並保留其現有運作狀態與喚醒路由決策。
 
-The hook never consumes or acknowledges a durable wake record.
-`bin/fm-codex-stop-park.sh` owns capability selection, native queue delivery, single-flight identity and bounded failure behavior.
+此 hook 絕不會消費或確認持久保存的喚醒紀錄。
+`bin/fm-codex-stop-park.sh` 負責能力選擇、原生佇列投遞、單次執行身分識別，以及有界限的失敗處理行為。

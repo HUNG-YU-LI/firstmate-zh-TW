@@ -1,47 +1,52 @@
-# Control and recovery
+<a id="control-and-recovery"></a>
+# 控制與復原
 
-Load this with the running or recorded tool reference for trust, skill invocation, interrupt, exit, resume, or recovery.
+處理信任、技能呼叫、中斷、結束、恢復或復原時，搭配正在執行或已記錄工具的參考載入。
 
-## Typed data and lifecycle control
+<a id="typed-data-and-lifecycle-control"></a>
+## 型別化資料與生命週期控制
 
-The router owns lifecycle-only control and recorded-harness selection.
-Conversation and harness-native skill invocation use `../../../bin/fm-send.sh`.
-`../../../docs/agent-control.md` owns the data-plane split, and `../../../bin/fm-control-lib.sh` owns executable capabilities.
-Tool-reference exit and interrupt values are empirical records, not keys to improvise; a new adapter remains uncontrollable until they land in that owner.
-Let the control plane verify postconditions.
+僅限生命週期的控制，以及已記錄執行環境的選擇，由路由器負責。
+對話與執行環境原生技能呼叫，使用 `../../../bin/fm-send.sh`。
+資料平面分工以 `../../../docs/agent-control.md` 為準，可執行能力則由 `../../../bin/fm-control-lib.sh` 定義。
+工具參考中的結束與中斷值，是實測紀錄，不是可臨場猜測的按鍵；新介接器的這些值合併到負責元件前，仍不可控制。
+讓控制平面驗證後置條件。
 
-## Trust and skill submission
+<a id="trust-and-skill-submission"></a>
+## 信任與技能送出
 
-Inspect after spawn within the tool's readiness window.
-Select only its documented trust choice from the active Firstmate home, binding `FM_HOME` unless already correct, then inspect again under the router-owned completion postcondition.
-No observed dialog proves only that launch.
+啟動後，在工具就緒時間窗內檢查。
+從目前 Firstmate home，只選擇該工具文件記錄的信任選項；除非已正確設定，否則綁定 `FM_HOME`，再依路由器定義的完成後置條件重新檢查。
+未觀察到對話框，只能證明該次啟動沒有出現。
 
-Each supported harness handles its folder-trust gate differently, and the tool reference owns the detail.
-For Claude, load `references/harness/claude.md`; its workspace-trust section owns the non-key-answerable gate and spawn-time pre-registration for every spawn kind.
-agy gates every fresh worktree too; the spawn pre-registers it in agy's own store the same way, and a strict post-launch gate answers any dialog that still renders before the spawn reports success.
-Cursor suppresses its dialog with launch-time `--trust`, and Muse suppresses its own with `--yolo`.
-Kiro suppresses its `--trust-all-tools` confirmation modal with a `chat.disableTrustAllConfirmation` setting the spawn seeds into the per-task `KIRO_HOME`; `references/harness/kiro.md` owns that recipe and where the decision persists.
-Grok renders a folder-trust gate in a linked worktree, and `references/harness/grok.md` owns how to verify the worker's real location, answer it, and where the decision persists; the project picker is a separate dialog that stays absent when the spawn starts in a git root.
-Pi gates the fresh-worktree case too, but unlike Claude its dialog is answered with Enter, and `references/harness/pi.md` owns that recipe and where the decision persists.
-Codex shows a directory-trust dialog on the first run for a repository root.
+各支援執行環境處理資料夾信任關卡的方式不同，細節以各工具參考為準。
+Claude 請載入 `references/harness/claude.md`；其工作區信任區段定義不能用按鍵回答的關卡，以及各種啟動類型在啟動時的預先登錄。
+agy 也會對每個全新 worktree 設關卡；啟動程序以同樣方式預先登錄到 agy 自身儲存區，而啟動後的嚴格關卡會在回報成功前，回答仍然顯示的任何對話框。
+Cursor 透過啟動時 `--trust` 抑制對話框，Muse 則使用 `--yolo`。
+Kiro 透過啟動程序在每項工作的 `KIRO_HOME` 植入 `chat.disableTrustAllConfirmation` 設定，抑制 `--trust-all-tools` 確認視窗；流程與決策保存位置，以 `references/harness/kiro.md` 為準。
+Grok 會在連結 worktree 中顯示資料夾信任關卡；如何驗證工作 Agent 真正位置、回答關卡，以及決策保存位置，以 `references/harness/grok.md` 為準；專案選擇器是另一個獨立對話框，啟動從 Git 根目錄開始時不會出現。
+Pi 也會對全新 worktree 設關卡，但不同於 Claude，其對話框可用 Enter 回答；流程與決策保存位置，以 `references/harness/pi.md` 為準。
+Codex 在某儲存庫根目錄首次執行時，會顯示目錄信任對話框。
 
-Use the tool's exact skill form, or natural language only when no separate command is verified or the form remains uncertain.
-A successful send or key return is not proof of submission; require the tool-specific postcondition.
-Popup, queued-input, and readiness handling belongs to `../../../bin/fm-composer-lib.sh` and the selected backend.
+使用工具精確的技能形式；只有未驗證獨立指令，或形式仍不確定時，才使用自然語言。
+成功傳送或按鍵返回，不代表提交成功；必須符合工具專屬後置條件。
+彈出視窗、排隊輸入與就緒處理，由 `../../../bin/fm-composer-lib.sh` 及選定後端負責。
 
-## Interrupt and exit
+<a id="interrupt-and-exit"></a>
+## 中斷與結束
 
-Use the control plane so capabilities are checked first.
-Interrupt preserves the agent and work; exit stops only the agent and preserves its endpoint, isolated copy, and uncommitted changes.
-Cleanup and discard are not lifecycle verbs.
-The tool reference records repeat, acknowledgement, and clearing behavior, while the executable owner sends or refuses the sequence.
+使用控制平面，先檢查能力。
+Interrupt 保留 Agent 與工作；exit 只停止 Agent，保留端點、隔離副本與未提交變更。
+清理與捨棄不是生命週期動詞。
+工具參考記錄重複、確認與清除行為，可執行元件則傳送或拒絕該序列。
 
-## Resume and recovery
+<a id="resume-and-recovery"></a>
+## 恢復與復原
 
-Native resume availability and form belong solely to the selected tool reference.
-Use native resume only when both that reference and the recovery procedure call for it.
-Deterministic relaunch instead trusts instructions on disk, not a private session, and never needs a session id printed at exit.
-One relaunch-time exception is the runtime's own recorded session identity, used only to keep that runtime's status authority valid across the replacement - `../../../docs/agent-control.md` "Transactional relaunch" owns it.
+原生恢復的可用性與形式，只以選定工具參考為準。
+只有該參考與復原程序都要求時，才使用原生恢復。
+具確定性的重新啟動，則相信磁碟上的指示，而非私人工作階段，也不需要結束時印出的工作階段 ID。
+重新啟動時唯一例外，是執行階段自身已記錄的工作階段身分；它只用來維持替代程序前後的狀態權威有效，規則以 `../../../docs/agent-control.md` 的「Transactional relaunch」為準。
 
-`../stuck-crewmate-recovery/SKILL.md` owns worker recovery and `../secondmate-provisioning/SKILL.md` owns secondmate recovery; both preserve recorded work.
-The router's recovery scenarios select the additional common references for replacement profiles and secondmates.
+工作 Agent 復原由 `../stuck-crewmate-recovery/SKILL.md` 負責，二副復原由 `../secondmate-provisioning/SKILL.md` 負責；兩者都保留已記錄工作。
+路由器的復原情境，會為替代設定檔與二副選擇額外共用參考。

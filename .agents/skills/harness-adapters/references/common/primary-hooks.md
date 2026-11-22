@@ -1,40 +1,45 @@
-# Primary startup and hooks
+<a id="primary-startup-and-hooks"></a>
+# 主要工作階段啟動與 hook
 
-Load this with the detected primary's tool reference before changing session startup, turn-end handling, pre-tool protection, watcher supervision, or secondmate integration.
-The tool reference establishes either that identity's empirical path or its unsupported boundary.
+修改工作階段啟動、回合結束處理、工具執行前保護、監看程式監督或二副整合前，搭配偵測到的主要執行環境工具參考載入。
+工具參考會確立該身分的實測路徑，或不支援的邊界。
 
-## Turn end
+<a id="turn-end"></a>
+## 回合結束
 
-`../../../docs/turnend-guard.md` owns the "no turn ends blind" contract, hook installation, per-surface blocking behavior, and tradeoffs when a hook cannot block.
-`../../../docs/supervision-protocols/` and `../../../bin/fm-supervision-instructions.sh` own harness-specific wake protocols.
-Never substitute another harness's wait shape.
-`../../../bin/fm-busy-lib.sh` remains the semantic busy owner; a tool reference names only its source and evidence.
+「不盲目結束回合」契約、hook 安裝、各介面的阻擋行為，以及 hook 無法阻擋時的取捨，以 `../../../docs/turnend-guard.md` 為準。
+執行環境專屬喚醒協定，由 `../../../docs/supervision-protocols/` 與 `../../../bin/fm-supervision-instructions.sh` 負責。
+絕不替換成其他執行環境的等待形式。
+語意忙碌狀態仍由 `../../../bin/fm-busy-lib.sh` 負責；工具參考只指出來源與證據。
 
-Validate any turn-end change against the real harness in a scratch project or throwaway home.
-Update its executable or hook owner, concise tool fact, and `../../../docs/verification/supervision.md` under "Turn-end guard".
+任何回合結束變更，都在暫存專案或可拋棄 home 中，使用真正執行環境驗證。
+同步更新負責的執行檔或 hook、簡潔工具事實，以及 `../../../docs/verification/supervision.md` 的「Turn-end guard」。
 
-## Pre-tool protection
+<a id="pre-tool-protection"></a>
+## 工具執行前保護
 
-Supported primaries deny watcher-arm anti-patterns before execution, including shell `&`, truncating pipes, bundling, and broad `pkill -f fm-watch`.
-`../../../docs/arm-pretool-check.md` owns hook commands, output quirks, and evidence.
-The tool reference names the integration form.
-Validate changes against the real harness in a scratch project before trusting them.
+支援的主要執行環境會在執行前拒絕監看程式啟用的反模式，包括 Shell `&`、截斷管線、綁定多個指令，以及廣泛的 `pkill -f fm-watch`。
+Hook 指令、輸出特性與證據，以 `../../../docs/arm-pretool-check.md` 為準。
+工具參考指出整合形式。
+信任變更前，先在暫存專案中使用真正執行環境驗證。
 
-A primary must also account for built-in delegation that can create work outside Firstmate's durable records.
-Claude's verified delegation guard is in `references/harness/claude.md`, and Antigravity's is in `references/harness/agy.md`.
-`../../../docs/subagent-guard.md` owns its full contract, local hardening, escape hatch, and per-harness applicability review.
-Never generalize Claude tool names or permissions without live evidence.
+主要執行環境也必須處理內建委派，因為它可能建立 Firstmate 持久紀錄之外的工作。
+Claude 已驗證的委派防護記錄於 `references/harness/claude.md`，Antigravity 則記錄於 `references/harness/agy.md`。
+完整契約、本機強化、例外入口與逐執行環境適用性審查，以 `../../../docs/subagent-guard.md` 為準。
+沒有真實證據，絕不泛化 Claude 工具名稱或權限。
 
-## Session start
+<a id="session-start"></a>
+## 工作階段開始
 
-`../../../AGENTS.md` section 3 and the `session-start-recovery` skill remain the behavioral owners.
-`../../../docs/sessionstart-nudge.md` owns native tier assignment, transport, source routing, runtime bound, and fail-open behavior.
-Read it before changing session-open behavior.
-`../../../docs/verification/supervision.md` under "Native session-start delivery" owns active dated evidence.
+行為仍以 `../../../AGENTS.md` 第 3 節與 `session-start-recovery` 技能為準。
+原生層級分配、傳輸、來源路由、執行時間界線與失敗時放行行為，以 `../../../docs/sessionstart-nudge.md` 為準。
+修改工作階段開啟行為前，先閱讀該文件。
+現行附日期證據，以 `../../../docs/verification/supervision.md` 的「Native session-start delivery」為準。
 
-## Watcher supervision
+<a id="watcher-supervision"></a>
+## 監看程式監督
 
-`../../../bin/fm-session-start.sh` prints exactly one block for the detected primary.
-Follow only that rendered protocol.
-When changing a watcher adapter, update its file under `../../../docs/supervision-protocols/`, update `../../../docs/turnend-guard.md` if shared idle or turn-end behavior changed, and refresh the tool fact.
-An identity without a dedicated protocol uses its documented unsupported or unknown boundary; never invent one from a similar TUI.
+`../../../bin/fm-session-start.sh` 只為偵測到的主要執行環境印出一個區塊。
+只遵循該展開後協定。
+修改監看介接器時，更新其 `../../../docs/supervision-protocols/` 下的檔案；共用閒置或回合結束行為改變時，也更新 `../../../docs/turnend-guard.md`，並刷新工具事實。
+沒有專屬協定的身分，使用文件記錄的不支援或未知邊界；絕不從相似 TUI 自行發明協定。

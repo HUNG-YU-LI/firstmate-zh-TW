@@ -1,10 +1,12 @@
-# GitLab merge request watch and merge verification
+<a id="gitlab-merge-request-watch-and-merge-verification"></a>
+# GitLab 合併請求監看與合併驗證
 
-Empirical record for the merge watch and the merge path on GitLab, alongside the existing GitHub ones.
-The arming, poll, and missing-`glab` evidence through the GitHub-unaffected case was collected on 2026-07-21; "Merging a merge request" was run on 2026-08-22.
-Every output is reproduced exactly.
+這份實測紀錄涵蓋 GitLab 的合併監看與合併路徑，與既有 GitHub 紀錄並列。
+從啟動監看、輪詢、缺少 `glab`，到 GitHub 不受影響的案例，證據皆收集於 2026-07-21；「合併合併請求」則於 2026-08-22 執行。
+所有輸出均精確重現。
 
-## Versions
+<a id="versions"></a>
+## 版本
 
 ```
 $ glab --version
@@ -14,7 +16,7 @@ $ bash --version | head -1
 GNU bash, version 5.3.9(1)-release (x86_64-pc-linux-gnu)
 ```
 
-The merge evidence dated 2026-08-22 was collected on a different host, on:
+日期為 2026-08-22 的合併證據，在另一台主機收集，版本如下：
 
 ```
 $ glab --version
@@ -27,36 +29,39 @@ $ bash --version | head -1
 GNU bash, version 5.2.15(1)-release (x86_64-amazon-linux-gnu)
 ```
 
-That `glab` is a locally built 1.82.0; only its build tag and commit are elided, because they name a private build rather than a released version.
+該 `glab` 是本機建置的 1.82.0；只省略建置標籤與提交，因為它們指向私人建置，而非正式發布版本。
 
-## The evidence project
+<a id="the-evidence-project"></a>
+## 證據專案
 
-All live evidence here reads <https://gitlab.com/KarotKris/gitlab-merge-watch-fixture>, a public project that exists only to be this evidence.
-It holds one deliberately merged merge request and one deliberately open one, so both outcomes can be shown against real data.
-Every command against it reads a public merge request and needs no credential, so a reader can rerun each one and see the same output.
-Its README asks that the open merge request be left open.
+此處所有真實證據都讀取 <https://gitlab.com/KarotKris/gitlab-merge-watch-fixture>，這是一個專門作為證據用途的公開專案。
+它保有一個刻意合併的合併請求，以及一個刻意保持開啟的合併請求，讓兩種結果都能以真實資料展示。
+對它執行的每個指令都只讀取公開合併請求，不需要憑證，因此讀者可重跑每個指令並看到相同輸出。
+其 README 請求保持開啟的合併請求不要被合併或關閉。
 
-A non-default host appears below only as the placeholder `gitlab.example`, which resolves nowhere.
-That is deliberate: the host-agnostic property is a property of the stored record and the poll's URL reconstruction, so it is demonstrated by inspecting those rather than by reaching any private instance.
+下方非預設主機只以不會解析到任何位置的預留值 `gitlab.example` 出現。
+這是刻意的：不依賴主機的特性，來自已儲存紀錄與輪詢的 URL 重建，因此透過檢查這兩者證明，而不連線到任何私人執行個體。
 
-## Why the host is data rather than a constant
+<a id="why-the-host-is-data-rather-than-a-constant"></a>
+## 為何主機是資料而非常數
 
-GitLab runs mostly on self-hosted instances, so a merge request can live under any host.
-A GitLab project also sits under at least one group at no fixed depth, so no owner-and-repository pair can address one the way it can on GitHub.
-The stored record therefore carries `provider`, `url`, `host`, `path`, and `number`, and every consumer rebuilds the URL from those parts and refuses any record that does not reconstruct the stored URL exactly.
-`tests/fm-pr-check-security.test.sh` proves the host-agnostic path through a non-default-host sidecar and verifies that `glab` receives the reconstructed project URL.
+GitLab 多半執行於自行架設的執行個體，因此合併請求可能位於任何主機。
+GitLab 專案也至少位於一個群組之下，深度不固定，無法像 GitHub 一樣只用擁有者與儲存庫配對定址。
+因此，儲存紀錄攜帶 `provider`、`url`、`host`、`path` 與 `number`；每個消費端都會用這些部分重建 URL，若無法精確重建已儲存 URL，就拒絕該紀錄。
+`tests/fm-pr-check-security.test.sh` 透過非預設主機的 sidecar 證明不依賴主機的路徑，並驗證 `glab` 收到重建的專案 URL。
 
-## How plain glab is invoked, and why
+<a id="how-plain-glab-is-invoked-and-why"></a>
+## 一般 glab 的呼叫方式與原因
 
-Two things about plain `glab` were established by running it, because assuming either one would have failed silently into a permanent "not merged".
+以下兩個一般 `glab` 的事實都透過實際執行確認，因為任意假設其中一項，都會悄悄失敗並永遠停在「尚未合併」。
 
-First, plain `glab` has no field selector.
-`gh` reads one field with `--json state -q .state`; `glab mr view` offers only `-F, --output string  Format output as: text, json`.
-The merged check therefore reads glab's own field output, which needs no JSON processor; the poll's degraded read (head pipeline, merge-train car) is JSON-only and needs `jq`, and without `jq` the poll falls back to this field read so merged wakes keep working.
-Only an exact `merged` wakes firstmate, so a changed output format produces no wake rather than a false merge.
+首先，一般 `glab` 沒有欄位選取器。
+`gh` 可用 `--json state -q .state` 讀取單一欄位；`glab mr view` 只提供 `-F, --output string  Format output as: text, json`。
+因此合併檢查讀取 glab 本身的欄位輸出，不需要 JSON 處理器；輪詢的降級狀態讀取（head pipeline、merge train 車廂）只能使用 JSON，需要 `jq`；缺少 `jq` 時，輪詢會退回此欄位讀取，讓合併喚醒仍可運作。
+只有精確的 `merged` 會喚醒 firstmate，因此輸出格式變更只會造成不喚醒，不會誤報合併。
 
-Second, `glab` cannot take a merge request URL the way `gh pr view` can.
-That form shells out to git for the current repository, and the watcher runs in no repository:
+其次，`glab` 無法像 `gh pr view` 一樣接受合併請求 URL。
+該格式會呼叫 git 查詢目前儲存庫，但監看器並不在儲存庫中執行：
 
 ```
 $ cd /tmp && glab mr view https://gitlab.com/KarotKris/gitlab-merge-watch-fixture/-/merge_requests/1
@@ -65,7 +70,7 @@ Stopping at filesystem boundary (GIT_DISCOVERY_ACROSS_FILESYSTEM not set).
 git: exit status 128
 ```
 
-Passing the project URL to `-R` with the merge request number works from anywhere, and resolves the instance from that URL rather than from glab's configured default:
+將專案 URL 傳給 `-R`，並提供合併請求編號，就能從任何位置運作，而且會從該 URL 解析執行個體，而不是使用 glab 設定的預設值：
 
 ```
 $ cd /tmp && glab mr view 1 -R https://gitlab.com/KarotKris/gitlab-merge-watch-fixture
@@ -85,9 +90,10 @@ $ cd /tmp && glab mr view 2 -R https://gitlab.com/KarotKris/gitlab-merge-watch-f
 open
 ```
 
-## End to end: arming and polling a real merge request
+<a id="end-to-end-arming-and-polling-a-real-merge-request"></a>
+## 端到端：啟動監看並輪詢真實合併請求
 
-Three tasks were armed, two against the fixture and one against the placeholder host:
+三個任務啟動監看，其中兩個指向測試專案，一個指向預留主機：
 
 ```
 $ fm-pr-check.sh e1 https://gitlab.com/KarotKris/gitlab-merge-watch-fixture/-/merge_requests/1
@@ -98,7 +104,7 @@ $ fm-pr-check.sh e3 https://gitlab.example/group/subgroup/project/-/merge_reques
 armed: state/e3.check.sh
 ```
 
-The stored record for each, showing the host and the full project namespace as data:
+各自儲存的紀錄，顯示主機與完整專案命名空間皆作為資料保存：
 
 ```
 $ cat state/e1.pr-poll
@@ -116,7 +122,7 @@ group/subgroup/project
 7
 ```
 
-The provenance record for the non-default host, showing the bumped version tag:
+非預設主機的來源紀錄，顯示提升後的版本標籤：
 
 ```
 $ cat state/e3.pr-poll-registration
@@ -133,7 +139,7 @@ group/subgroup/project
 70:957244
 ```
 
-Running each published poll the way the watcher does, where an empty result means the poll stayed silent and produced no wake:
+以監看器相同的方式執行每個已發布輪詢；空結果代表輪詢保持靜默，沒有產生喚醒：
 
 ```
 $ fm-pr-poll.sh --validated $(tr '\n' ' ' < state/e1.pr-poll)
@@ -142,27 +148,28 @@ $ fm-pr-poll.sh --validated $(tr '\n' ' ' < state/e2.pr-poll)
 $ fm-pr-poll.sh --validated $(tr '\n' ' ' < state/e3.pr-poll)
 ```
 
-The merged fixture merge request produces exactly one `merged` line.
-The open one produces nothing, and the unreachable placeholder host produces nothing rather than a false merge.
+已合併的測試合併請求恰好產生一行 `merged`。
+開啟中的合併請求不產生輸出，無法連線的預留主機也不產生輸出，不會誤報合併。
 
-The same bytes work in the watcher's sidecar-driven mode, where the published check locates its own record:
+相同位元組也能在監看器由 sidecar 驅動的模式運作，此時已發布的檢查會定位自己的紀錄：
 
 ```
 $ state/e1x.check.sh
 merged
 ```
 
-## A missing CLI produces no wake, never a false merge
+<a id="a-missing-cli-produces-no-wake-never-a-false-merge"></a>
+## 缺少 CLI 不會喚醒，也絕不誤報合併
 
-The poll is silent on every error by design, so a missing `glab` would otherwise be indistinguishable from a merge request that is never merged.
-With `glab` removed from `PATH`, the poll stays silent even for the merge request that is genuinely merged:
+輪詢刻意在任何錯誤時保持靜默，因此若沒有其他處理，缺少 `glab` 就會與永不合併的合併請求無法區分。
+將 `glab` 從 `PATH` 移除後，即使合併請求真的已合併，輪詢仍保持靜默：
 
 ```
 $ PATH="$noglab" fm-pr-poll.sh --validated $(tr '\n' ' ' < state/e1.pr-poll)
 $ PATH="$noglab" fm-pr-poll.sh --validated $(tr '\n' ' ' < state/e3.pr-poll)
 ```
 
-Arming is the one point where that can be reported, so it refuses there instead of arming a watch that can never fire:
+啟動監看是唯一能回報此事的時機，因此會在此拒絕，不會啟動永遠無法觸發的監看：
 
 ```
 $ PATH="$noglab" fm-pr-check.sh e5 https://gitlab.com/KarotKris/gitlab-merge-watch-fixture/-/merge_requests/1
@@ -171,26 +178,28 @@ $ echo $?
 1
 ```
 
-A GitHub task is unaffected by a missing `glab`:
+GitHub 任務不受缺少 `glab` 影響：
 
 ```
 $ PATH="$noglab" fm-pr-check.sh e6 https://github.com/kunchenguid/firstmate/pull/750
 armed: state/e6.check.sh
 ```
 
-## Registration version
+<a id="registration-version"></a>
+## 註冊版本
 
-The live registration tag is `fm-pr-poll-registration-v2`, which includes the provider tag.
-A `fm-pr-poll-registration-v1` record no longer parses.
-Arm a current watch with `bin/fm-pr-check.sh`.
+目前註冊標籤為 `fm-pr-poll-registration-v2`，包含提供者標籤。
+`fm-pr-poll-registration-v1` 紀錄已無法解析。
+請以 `bin/fm-pr-check.sh` 啟動目前版本的監看。
 
-## Merging a merge request
+<a id="merging-a-merge-request"></a>
+## 合併合併請求
 
-`bin/fm-pr-merge.sh` now merges a GitLab merge request through the shared recording helper and GitLab's own live pre-merge guards.
-Every run below used a throwaway `FM_HOME`, so no live task record was touched, and a `glab` wrapper that refused any `merge` subcommand outright, so no merge could reach the forge even if a check were wrong.
-That wrapper is why the open fixture merge request could be used as evidence at all: it is `mergeable` with discussions resolved, so the pipeline conditions are the only thing between it and a real merge.
+`bin/fm-pr-merge.sh` 現在透過共用記錄輔助程式，以及 GitLab 本身的即時合併前防護，合併 GitLab 合併請求。
+以下每次執行都使用可拋棄的 `FM_HOME`，因此不會觸碰任何實際任務紀錄；也使用完全拒絕任何 `merge` 子指令的 `glab` 包裝程式，因此即使檢查有誤，合併也無法送達程式碼託管平台。
+正因為有該包裝程式，才能將保持開啟的測試合併請求用作證據：它是 `mergeable` 且討論皆已解決，所以只有 pipeline 條件阻擋真正合併。
 
-Merging needs `glab` for the read and `jq` to parse it, and either one absent refuses before anything is recorded:
+合併需要 `glab` 讀取與 `jq` 解析；缺少任一工具，都會在記錄任何內容前拒絕：
 
 ```
 $ PATH="$noglab" fm-pr-merge.sh e5 https://gitlab.com/KarotKris/gitlab-merge-watch-fixture/-/merge_requests/2
@@ -203,16 +212,16 @@ $ echo $?
 1
 ```
 
-Neither refusal armed a poll or recorded a `pr=`, so a missing tool leaves no half-prepared merge behind.
+兩種拒絕都未啟動輪詢，也未記錄 `pr=`，因此缺少工具不會留下準備一半的合併。
 
-When `config/pr-degraded-watch` is present, `bin/fm-pr-check.sh` refuses to arm a GitLab watch without `jq` because its degraded-state baseline is JSON-only; with the flag absent, it arms the existing merged-only watch without `jq`.
-A car-endpoint 404 is confirmed with one bounded read of the project's active merge-train list; only a readable list omitting the merge request triggers one bounded MR-state re-read, while list errors stay silent.
-An `opened` or `locked` re-read reports the drop; `closed` stays silent, `merged` reports the merge, and an unreadable re-read reports the confirmed drop with `mr_state=unconfirmed`.
-The watcher emits a drop only after it has recorded the merge request on the train.
-The merge path cannot read the field output: `detailed_merge_status`, `has_conflicts`, `blocking_discussions_resolved`, and the head pipeline appear only in glab's JSON.
-The poll's silence on a missing tool is safe because silence means "not merged yet"; a merge cannot be silent about it, so the requirement is reported rather than assumed.
+存在 `config/pr-degraded-watch` 時，`bin/fm-pr-check.sh` 會拒絕在缺少 `jq` 的情況下啟動 GitLab 監看，因為其降級狀態基準只能以 JSON 取得；沒有該旗標時，則可在缺少 `jq` 的情況下啟動既有的僅合併監看。
+車廂端點回傳 404 時，會透過一次有界讀取專案的有效 merge train 清單確認；只有可讀取且未包含該合併請求的清單，才會觸發一次有界的 MR 狀態重讀，清單錯誤則保持靜默。
+重讀得到 `opened` 或 `locked` 會回報退出佇列；`closed` 保持靜默，`merged` 回報合併，無法讀取的重讀則以 `mr_state=unconfirmed` 回報已確認的退出佇列。
+監看器只有在曾記錄該合併請求進入 train 後，才會發出退出佇列事件。
+合併路徑無法使用欄位輸出，因為 `detailed_merge_status`、`has_conflicts`、`blocking_discussions_resolved` 與 head pipeline 只出現在 glab 的 JSON 中。
+輪詢在缺少工具時保持靜默是安全的，因為靜默代表「尚未合併」；但合併操作不能對此保持靜默，因此會回報需求，而不是自行假設。
 
-The merged half of the fixture is refused, and every failing condition is listed rather than just the first:
+測試專案中已合併的那一個會被拒絕，且會列出全部失敗條件，不只第一個：
 
 ```
 $ fm-pr-merge.sh e1 https://gitlab.com/KarotKris/gitlab-merge-watch-fixture/-/merge_requests/1
@@ -226,8 +235,8 @@ $ echo $?
 1
 ```
 
-The open half is `mergeable`, conflict-free, and has its discussions resolved, so only the pipeline conditions refuse it.
-The fixture runs no CI, so its `head_pipeline` is `null`, which is reported as `none` rather than treated as nothing to check:
+開啟中的那一個為 `mergeable`、無衝突，且討論都已解決，因此只有 pipeline 條件造成拒絕。
+測試專案不執行 CI，所以 `head_pipeline` 是 `null`；這會回報為 `none`，不會當成沒有東西需要檢查：
 
 ```
 $ fm-pr-merge.sh e2 https://gitlab.com/KarotKris/gitlab-merge-watch-fixture/-/merge_requests/2
@@ -239,14 +248,14 @@ $ echo $?
 1
 ```
 
-By default, a project that runs no pipeline at all therefore cannot merge through this path.
-That is the intended reading of the requirement rather than an oversight: a successful pipeline at the head is a condition, and "there is no pipeline" does not satisfy it.
-The only exception is an attended `--allow-no-pipeline` on an explicit captain order, which waives exactly this null `head_pipeline` and nothing else; the header of `bin/fm-pr-merge.sh` owns its guards.
+因此，預設完全不執行 pipeline 的專案，無法透過此路徑合併。
+這是需求的預期解讀，不是疏漏：head 上成功的 pipeline 是必要條件，而「沒有 pipeline」不符合條件。
+唯一例外是在船長明確下令後，有人監督地使用 `--allow-no-pipeline`；它只豁免此處 null 的 `head_pipeline`，不豁免其他條件；其防護規則由 `bin/fm-pr-merge.sh` 標頭定義。
 
-Both refusals came after `pr=` was recorded and the merge poll was armed, as a failed live verification or `gh pr merge` does on the GitHub side, so a refusal still leaves the audit trail and the watch in place.
+兩種拒絕都發生在已記錄 `pr=` 並啟動合併輪詢之後，與 GitHub 端即時驗證或 `gh pr merge` 失敗時相同，因此拒絕後仍保留稽核軌跡與監看。
 
-A recorded `pr_head=` that no longer matches the live head is reported, and the live head is what gets verified.
-The stale value below was written into the task record by hand, because a GitLab task never records one on its own:
+若已記錄的 `pr_head=` 不再符合即時 head，會回報此事，並以即時 head 進行驗證。
+下方過期值是手動寫入任務紀錄，因為 GitLab 任務本身絕不會自行記錄此值：
 
 ```
 $ fm-pr-merge.sh e4 https://gitlab.com/KarotKris/gitlab-merge-watch-fixture/-/merge_requests/2
@@ -257,23 +266,25 @@ error: refusing to merge https://gitlab.com/KarotKris/gitlab-merge-watch-fixture
   - the head pipeline ran at "none", not at the current head 66b8a6777bea5e291d7fa2fc20c42ad7686f6bc8
 ```
 
-The remaining refusal conditions, and the merge itself, are covered by `tests/fm-pr-merge.test.sh` against fixtures.
-The conflict, unresolved-discussion, and running-pipeline conditions were additionally exercised against real merge requests on a private instance; those runs cannot be reproduced here, so their identifiers stay out of this record.
-The merge itself is not exercised against any live merge request, in either direction: `glab mr merge` has no dry run, so a live success path would mean merging someone's work to produce evidence.
+其餘拒絕條件與合併本身，由 `tests/fm-pr-merge.test.sh` 使用測試資料涵蓋。
+衝突、未解決討論與執行中 pipeline 條件，也另外在私人執行個體的真實合併請求上測試；那些執行無法在此重現，因此其識別資訊不納入本紀錄。
+合併本身未對任何真實合併請求測試，任一方向皆然：`glab mr merge` 沒有 dry run，因此測試真實成功路徑，就等於為了產生證據而合併別人的工作。
 
-## Why the head is read live and bound to the merge
+<a id="why-the-head-is-read-live-and-bound-to-the-merge"></a>
+## 為何即時讀取 head 並綁定合併
 
-The verified head is passed to `glab mr merge --sha`, so GitLab refuses the merge if the source branch moved between the read and the merge.
-Without it, a push landing in that window would merge commits nothing verified.
+已驗證的 head 會傳給 `glab mr merge --sha`，因此若來源分支在讀取與合併之間移動，GitLab 會拒絕合併。
+若沒有此條件，這個時間窗內到達的 push 就可能合併完全未驗證的提交。
 
-`--yes` is passed for the same reason the watch poll needs no terminal: an unattended run cannot answer a confirmation prompt, and a wedged prompt is worse than a refusal.
-It skips only that prompt; the conditions above are what authorize the merge.
+傳入 `--yes` 的原因，與監看輪詢不需要終端機相同：無人值守的執行無法回答確認提示，而卡住的提示比拒絕更糟。
+它只略過該提示；真正授權合併的是上述條件。
 
-## Why a recorded head is not the authority
+<a id="why-a-recorded-head-is-not-the-authority"></a>
+## 為何已記錄 head 不是權威來源
 
-`bin/fm-pr-check.sh` records `pr_head=` only for GitHub, where `gh` exposes the head commit as a selectable field.
-It is optional by design, and the other consumers already treat it that way: `bin/fm-teardown.sh` reads the head from the forge at teardown and falls back to its provider-agnostic content check, and `bin/fm-review-diff.sh` fetches a pull-request head from the remote when none is recorded, which a merge request has no ref for, so a GitLab task is diffed against its local branch under that script's warning ([architecture.md](architecture.md) owns that fallback).
+`bin/fm-pr-check.sh` 只會為 GitHub 記錄 `pr_head=`，因為 `gh` 將 head 提交提供為可選取欄位。
+它刻意設計為選用，其他消費端也已如此處理：`bin/fm-teardown.sh` 在拆除時從程式碼託管平台讀取 head，再退回不依賴提供者的內容檢查；沒有已記錄值時，`bin/fm-review-diff.sh` 會從遠端擷取 pull request head，但合併請求沒有對應 ref，因此 GitLab 任務會依該指令碼的警告，與本機分支比較 diff（此備援由 [architecture.md](architecture.md) 定義）。
 
-The merge path does not record one either, and deliberately does not depend on one.
-A rebase moves the head and leaves any recorded value stale, so a merge decided from metadata can verify a commit that no longer exists.
-Reading the head live at merge time, reporting a recorded value that disagrees, and binding the merge to what was actually verified is what closes that gap.
+合併路徑也不會記錄 head，且刻意不依賴已記錄值。
+rebase 會移動 head，讓任何已記錄值過期，因此依中繼資料決定合併，可能驗證到已不存在的提交。
+在合併時即時讀取 head、回報不一致的已記錄值，並將合併綁定實際驗證的內容，才能補上這個缺口。

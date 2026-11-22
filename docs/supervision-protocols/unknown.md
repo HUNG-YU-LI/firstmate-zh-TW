@@ -1,13 +1,13 @@
-Mode: Unknown harness fallback.
+模式：未知執行環境的備援方案。
 
-This primary harness does not have a verified watcher wake adapter.
-Follow the generic supervision contract in `AGENTS.md`.
-First cycle: drain queued wakes, then choose a supervision wait that the harness can actually wake from.
-Ordinary wake: drain, handle all emitted wakes, reconcile open decisions and unread status lines, and run the exact `--ack-through` command printed as `WAKE_ACK_REQUIRED`, then repeat that verified wait while supervision is still required.
-Before that acknowledgement, interruption leaves the work durable for idempotent re-handling.
-Use `bin/fm-watch-arm.sh` only when the harness has a tracked background mechanism that survives the tool call and notifies the model on process exit.
-Use a bounded foreground wait over `bin/fm-watch.sh` when that wake mechanism is not verified.
-Never use shell `&` for watcher supervision.
-Failure or missing cycle only: inspect the failure and restore the same verified wait shape.
+此主要執行環境尚無經過驗證的監看器喚醒轉接器。
+請遵循 `AGENTS.md` 中的通用監督契約。
+第一個週期：先清空待處理的喚醒佇列，再選擇此執行環境確實能從中喚醒的監督等待方式。
+一般喚醒：清空佇列、處理所有輸出的喚醒事件、核對尚未處理的決策與未讀狀態列，並原樣執行以 `WAKE_ACK_REQUIRED` 印出的 `--ack-through` 指令；只要仍需監督，就重複使用這個經過驗證的等待方式。
+在確認之前，即使中斷，工作也會持久保存，可透過冪等操作重新處理。
+只有在執行環境提供受追蹤的背景機制，能在工具呼叫結束後繼續執行，且會在程序結束時通知模型，才可使用 `bin/fm-watch-arm.sh`。
+若尚未驗證這種喚醒機制，請對 `bin/fm-watch.sh` 使用有時間上限的前景等待。
+監看器監督絕不可使用 shell `&`。
+僅在失敗或週期遺失時：檢查失敗原因，並恢復原本經過驗證的等待形式。
 
-Record new verification evidence before promoting an unknown harness to a named snippet.
+將未知執行環境提升為具名片段之前，請先記錄新的驗證證據。

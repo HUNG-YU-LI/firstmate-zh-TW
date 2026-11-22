@@ -1,31 +1,31 @@
-Mode: Cursor stop-hook-owned park.
+模式：由 Cursor stop hook 負責的停駐。
 
-When this session owns supervision and away mode is not active:
-1. Drain first with `bin/fm-wake-drain.sh`.
-   After handling all emitted wakes and reconciling open decisions, run the exact `--ack-through` command printed as `WAKE_ACK_REQUIRED`; until then the work remains durable for idempotent re-handling after interruption.
-2. Routine watcher arm and re-arm are owned by the `stop` hook (`bin/fm-turnend-guard-cursor.sh`), never by you.
-   Cursor runs that hook synchronously and awaits it, so every turn end while supervision is needed parks the turn boundary open on one home-scoped watcher cycle, with no model command and no model tokens spent while parked.
-3. An actionable close wakes you as a follow-up turn carrying the `watcher` operational kind.
-   On that wake, run `bin/fm-wake-drain.sh` first and handle it.
-   Do not run `bin/fm-watch-arm.sh` after an ordinary wake; the next turn end parks again automatically when supervision is still needed.
-   Do not invent a wake from an attach-status line alone; drain and act only on real wake records, the drain's `OPEN DECISIONS` entries, or a real watcher reason line.
-4. The captain keeps control while the hook is parked.
-   A message typed into a parked Cursor pane is accepted and runs its turn immediately, but the older park remains the recorded owner until that turn ends and the next `stop` hook claims the baton.
-   An actionable watcher close in that window can still be delivered by the older park as one follow-up.
-   This is bounded and safe: only one park exists in that window, so the event is a real wake rather than a stale duplicate of another park's wake, the durable wake queue makes handling idempotent, and the next `stop` claim makes an older park that is still running stand down without emitting.
-   The private supersession records are `state/.cursor-park-owner` and its short publication and commit lock `state/.cursor-park-owner.lock`.
-5. On a `turn-end-guard` follow-up, the park could not establish a live cycle.
-   Inspect the watcher startup path rather than turning the notice into a repeating manual-arm loop; the nag is bounded by `FM_CURSOR_TURNEND_BLOCK_BUDGET` (default 3) and then stops on its own.
-6. Treat `watcher: started ...` and `watcher: attached ...` inside park output as proof that one live cycle exists.
-   On attach, the arm follows verified identity-matched successors instead of exiting when the first cycle ends.
-7. The durable wake queue preserves actionable events between a follow-up and the next park.
-   [`watcher-continuity.md`](../watcher-continuity.md) owns the exact session-lock recovery boundary.
-8. Waiting on the hook-owned park is silent: do not send idle progress while the watcher is parked.
+當此工作階段負責監督，且未啟用離開模式時：
+1. 先執行 `bin/fm-wake-drain.sh`，清空待處理的喚醒佇列。
+   處理完所有輸出的喚醒事件並核對尚未處理的決策後，原樣執行以 `WAKE_ACK_REQUIRED` 印出的 `--ack-through` 指令；在此之前，工作會持久保存，即使中斷也能以冪等方式重新處理。
+2. 例行的監看器啟動與重新啟動，都由 `stop` hook（`bin/fm-turnend-guard-cursor.sh`）負責，絕不由你負責。
+   Cursor 會同步執行並等待這個 hook，因此只要仍需監督，每次回合結束都會在一個以主目錄為範圍的監看器週期上，將回合邊界保持開啟並停駐；停駐期間無須模型下指令，也不消耗模型 token。
+3. 需要處理的關閉事件，會以帶有 `watcher` 作業種類的後續回合喚醒你。
+   收到該喚醒時，先執行 `bin/fm-wake-drain.sh`，再處理它。
+   一般喚醒之後不要執行 `bin/fm-watch-arm.sh`；只要仍需監督，下一次回合結束就會自動再次停駐。
+   不要只看到附加狀態列就自行認定發生喚醒；請清空佇列，只依據真正的喚醒紀錄、清空操作產生的 `OPEN DECISIONS` 項目，或真正的監看器原因列採取行動。
+4. hook 停駐期間，船長（captain）仍保有控制權。
+   在停駐的 Cursor 窗格輸入訊息，會被接受並立即執行該回合；但在該回合結束、下一個 `stop` hook 接手之前，紀錄中的負責者仍是較早的停駐程序。
+   在此時間窗內，監看器因需要處理的事件而關閉，仍可由較早的停駐程序送出一次後續回合。
+   這個行為有界限且安全：該時間窗內只有一個停駐程序，所以事件是真正的喚醒，而非另一個停駐程序喚醒的過期重複項；持久喚醒佇列讓處理具備冪等性，而下一次 `stop` 接手後，若較早的停駐程序仍在執行，便會讓它退場且不再送出事件。
+   私有的接替紀錄是 `state/.cursor-park-owner`，以及它短時間使用的發布與提交鎖 `state/.cursor-park-owner.lock`。
+5. 出現 `turn-end-guard` 後續回合，表示停駐程序無法建立運作中的週期。
+   請檢查監看器啟動路徑，不要把通知變成反覆手動啟動的迴圈；提醒次數受 `FM_CURSOR_TURNEND_BLOCK_BUDGET` 限制（預設 3），之後會自行停止。
+6. 停駐輸出中的 `watcher: started ...` 與 `watcher: attached ...`，可視為存在一個運作中週期的證據。
+   附加時，啟動程序會追隨身分識別相符且經過驗證的接續程序，而非在第一個週期結束時就退出。
+7. 持久喚醒佇列會保存後續回合至下一次停駐之間需要處理的事件。
+   [`watcher-continuity.md`](../watcher-continuity.md) 負責定義確切的工作階段鎖復原邊界。
+8. 等待由 hook 負責的停駐時保持靜默：監看器停駐期間，不要傳送閒置進度訊息。
 
-The watcher itself remains `bin/fm-watch.sh`, and `bin/fm-watch-arm.sh` remains the verified arm wrapper that the `stop` hook runs as its own tracked child.
-Re-arm attaches to an existing healthy cycle when one is already present and follows its verified successor chain.
-See [`watcher-continuity.md`](../watcher-continuity.md) for the arm-layer successor and clean-close failure contract.
+監看器本身仍是 `bin/fm-watch.sh`；`bin/fm-watch-arm.sh` 仍是經過驗證、由 `stop` hook 當作自己受追蹤子程序執行的監看啟動包裝程式。
+重新啟動時，若已有正常運作的週期，會附加至該週期並追隨經過驗證的接續鏈。
+啟動層的接續程序與正常關閉失敗契約，請參閱 [`watcher-continuity.md`](../watcher-continuity.md)。
 
-Exit status 2 is a silent no-op on Cursor's `stop` step, so this adapter never blocks a turn end and instead forces one bounded follow-up, which [`turnend-guard.md`](../turnend-guard.md) accepts as an equal alternative.
-That document owns the double loop bound, the supersession contract, the Pi-host stand-down, and the compatibility limits, including that a Cursor primary must be launched with `--trust` for its project hooks to load at all.
-The registered `beforeSubmitPrompt` dialog-mirror hook does not invalidate the park baton; [turnend-guard.md](../turnend-guard.md) owns that deferred boundary.
+在 Cursor 的 `stop` 步驟中，結束狀態 2 會成為靜默且無效果的操作，因此這個轉接器不會阻擋回合結束，而是強制產生一次有界限的後續回合；[`turnend-guard.md`](../turnend-guard.md) 接受這種方式作為等效替代方案。
+該文件負責定義雙重迴圈上限、接替契約、Pi-host 退場規則，以及相容性限制；其中包括 Cursor 主要工作階段必須以 `--trust` 啟動，專案 hooks 才會載入。
+已註冊的 `beforeSubmitPrompt` 對話鏡像 hook 不會使停駐交接權杖失效；這個延後處理的邊界由 [turnend-guard.md](../turnend-guard.md) 定義。

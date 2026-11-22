@@ -1,39 +1,45 @@
-# Jev guard framework
+<a id="jev-guard-framework"></a>
+# Jev 防護框架
 
-A Jev guard is a bounded, read-only host diagnostic that turns one class of resource or state pressure into a machine-readable audit record and a one-line verdict.
-Guards exist so a supervision loop can distinguish a genuinely wedged worker from a host condition that merely looks like one, without granting any guard the power to change the system it measures.
-This document owns the framework contract every guard family follows; each family's own script header owns its measured signals and thresholds.
+Jev guard 是有執行界限、唯讀的主機診斷工具，可將某一類資源或狀態壓力轉為機器可讀的稽核紀錄，以及單行判定結果。
+防護工具讓監督迴圈能區分真正卡死的工作 Agent，與只是看起來像卡死的主機狀況，同時不授予任何防護工具改變受測系統的權限。
+本文件定義每一類防護工具都須遵循的框架契約；各類工具自身的腳本標頭，則負責定義其量測訊號與門檻。
 
-## Shape
+<a id="shape"></a>
+## 結構
 
-Each family ships as a pair plus its tests.
-`bin/fm-jev-<name>-guard.sh` is a thin wrapper that resolves its own directory and `exec`s the family engine with `python3`.
-`bin/fm-jev-<name>-guard.py` is the engine: it measures, classifies, and prints.
-`tests/fm-jev-<name>-guard.test.sh` drives the engine through its public CLI and asserts observable output, never engine source text.
+每一類防護工具都以一對檔案及其測試交付。
+`bin/fm-jev-<name>-guard.sh` 是精簡包裝腳本，會解析自己的目錄，並透過 `python3` 以 `exec` 執行該類工具的引擎。
+`bin/fm-jev-<name>-guard.py` 是引擎，負責量測、分類及輸出。
+`tests/fm-jev-<name>-guard.test.sh` 透過引擎公開的 CLI 驅動測試，斷言可觀察的輸出，絕不斷言引擎原始碼文字。
 
-## Engine contract
+<a id="engine-contract"></a>
+## 引擎契約
 
-- Read-only diagnostics: a guard never writes to the system it measures and never mutates agent, session, or repository state.
-- Fail-open: permission errors, missing pseudo-files, and virtualized-environment gaps degrade to a graceful `UNKNOWN` verdict with a reason, never a crash and never a false alarm.
-- Bounded: one run finishes in well under a second on a healthy host; a guard that cannot answer in its budget reports `UNKNOWN` rather than blocking its caller.
-- Structured output: `--json` prints one JSON object with `name`, `checked_at`, `status`, `recommendation`, and the family's own measured fields; human output is a short list of the same facts.
-- Deterministic classification: `status` is one of `OK`, `WARNING`, `CRITICAL`, or `UNKNOWN` - the last only when fail-open withholds the verdict; thresholds live in the engine and are named in its header so a reader can audit the verdict.
+- 唯讀診斷：防護工具絕不寫入受測系統，也不修改 Agent、工作階段或儲存庫狀態。
+- 失敗時放行（fail-open）：權限錯誤、缺少虛擬檔案及虛擬化環境的能力缺口，都應平順降級為附帶原因的 `UNKNOWN` 判定，絕不崩潰，也不誤報。
+- 有界限：在正常主機上，單次執行應遠低於一秒；無法在時間預算內回答的防護工具，應回報 `UNKNOWN`，而非阻擋呼叫端。
+- 結構化輸出：`--json` 輸出單一 JSON 物件，包含 `name`、`checked_at`、`status`、`recommendation` 與該類工具自己的量測欄位；人類可讀輸出則用簡短清單呈現相同事實。
+- 確定性分類：`status` 只能是 `OK`、`WARNING`、`CRITICAL` 或 `UNKNOWN`；最後一種僅用於 fail-open 保留判定時。門檻定義於引擎，並在標頭具名列出，方便讀者稽核判定。
 
-## Verdict semantics
+<a id="verdict-semantics"></a>
+## 判定語意
 
-- `OK` means the measured condition is healthy and the caller should continue unchanged.
-- `WARNING` means the condition is degraded but explained; the caller records it and continues.
-- `CRITICAL` means the condition explains worker silence; the caller should not escalate a wedge while it holds, within whatever bound the caller puts on that deferral (see [Caller](#caller)).
-- A guard never recommends a destructive action; `recommendation` is diagnostic text for the operator, not a command.
+- `OK`：量測條件正常，呼叫端應維持原樣繼續。
+- `WARNING`：條件已退化，但原因明確；呼叫端記錄後繼續。
+- `CRITICAL`：此條件足以解釋工作 Agent 為何沒有回應；在條件持續期間，呼叫端不應升級卡死事件，但仍須遵守呼叫端對延後處理設定的界限（見[呼叫端](#caller)）。
+- 防護工具絕不建議破壞性操作；`recommendation` 是給操作者的診斷文字，不是指令。
 
-## Caller
+<a id="caller"></a>
+## 呼叫端
 
-The watcher's wedge timer is the one caller, and only in a home that lists guards in `config/wedge-evidence-guards`.
-There a live pane about to wedge-escalate asks each listed guard, and a `CRITICAL` answer defers that escalation for a bounded run of windows instead of suppressing it.
-[`configuration.md`](configuration.md#wedge-evidence-guards-configwedge-evidence-guards) owns that opt-in and its example operator family, and `bin/fm-watch.sh`'s `wedge_guard_evidence` owns the exact invocation and fail-open boundaries.
+唯一的呼叫端是監看器的卡死計時器，而且只在主目錄的 `config/wedge-evidence-guards` 列有防護工具時使用。
+在該情境下，運作中的窗格即將升級卡死事件前，會詢問每個列出的防護工具；收到 `CRITICAL` 時，會在有限個時間窗內延後升級，而非完全抑制。
+[`configuration.md`](configuration.md#wedge-evidence-guards-configwedge-evidence-guards) 負責定義這項選擇性設定及其操作者範例類型；`bin/fm-watch.sh` 的 `wedge_guard_evidence` 則負責確切的呼叫方式與 fail-open 邊界。
 
-## Adding a family
+<a id="adding-a-family"></a>
+## 新增防護類型
 
-Copy the smallest existing pair, keep the wrapper under ten lines, and keep every threshold in the engine with a comment naming the resource it bounds.
-Add the family's behavioral test alongside it and run it through `bin/fm-test-run.sh`.
-A family that needs a host-specific source (a fleet registry, a pool manager, a quota service, or a product's hook store) belongs to the operator's own layer, not this framework.
+複製最精簡的既有檔案組，讓包裝腳本保持在十行內，並將所有門檻留在引擎中，以註解標明它限制的是哪一項資源。
+在旁邊加入該類工具的行為測試，並透過 `bin/fm-test-run.sh` 執行。
+若某一類工具需要主機專屬來源，例如船隊登錄表、資源池管理器、配額服務或產品的 hook 儲存區，就應放在操作者自己的層次，而非本框架。

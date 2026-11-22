@@ -1,10 +1,10 @@
 #!/usr/bin/env node
-// Minimal process-event-adapter/1 example.
+// 最小的 process-event-adapter/1 範例。
 //
-// A source configuration reference has the form file:/absolute/path.
-// source.poll waits until that regular file exists, then returns its bounded
-// UTF-8 contents as external evidence.
-// The result is terminal and classifies as file-signal.
+// 來源設定參照的格式為 file:/absolute/path。
+// source.poll 會等到該一般檔案存在，再回傳有大小限制的
+// UTF-8 內容作為外部證據。
+// 此結果屬於終止結果，分類為 file-signal。
 
 import { readFile, stat } from "node:fs/promises";
 import path from "node:path";

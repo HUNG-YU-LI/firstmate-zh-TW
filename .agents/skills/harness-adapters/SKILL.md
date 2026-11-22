@@ -1,7 +1,7 @@
 ---
 name: harness-adapters
 description: >-
-  Load before spawning or recovering a crewmate or secondmate, handling a trust dialog, sending a harness-specific skill invocation, interrupting or exiting an agent, resuming an exited agent, or verifying a new harness adapter.
+  啟動或復原船員／二副、處理信任對話框、傳送執行環境專屬技能呼叫、中斷或結束 Agent、恢復已結束 Agent，或驗證新執行環境介接器前載入。
 user-invocable: false
 metadata:
   internal: true
@@ -9,51 +9,55 @@ metadata:
 
 # harness-adapters
 
-This is the one skill, trigger, and routing owner for harness-specific Firstmate operations.
-Load this router first, then exactly the common reference and one harness reference selected below.
-When an action spans rows, load the union once rather than every reference.
-Files under `references/` are resources of this skill, not additional catalogued skills.
+本技能是執行環境專屬 Firstmate 操作的唯一技能、觸發與路由負責者。
+先載入本路由器，再精確載入下方選定的共用參考與一份執行環境參考。
+動作跨越多列時，載入所需參考的聯集一次即可，不要載入所有參考。
+`references/` 下的檔案是本技能資源，不是另行列入目錄的技能。
 
-## Path contract
+<a id="path-contract"></a>
+## 路徑契約
 
-The skill directory is the directory containing this `SKILL.md`.
-Resolve on-demand reference links and relative links to their executable, documentation, or sibling-skill owners against the skill directory, including links named by a nested reference.
-Operational paths keep the context named by their owner: `config/` and active-home settings belong to the active Firstmate home, `state/` belongs to that home, and project settings such as `.claude/settings.json` belong to the target project.
+技能目錄就是包含此 `SKILL.md` 的目錄。
+按需參考連結，以及指向負責執行檔、文件或同層技能的相對連結，都以技能目錄解析，包括巢狀參考內指定的連結。
+操作路徑維持負責元件指定的上下文：`config/` 與目前 home 設定屬於目前 Firstmate home，`state/` 屬該 home，`.claude/settings.json` 等專案設定則屬目標專案。
 
-## Non-negotiable safety
+<a id="non-negotiable-safety"></a>
+## 不可妥協的安全規則
 
-Never dispatch a crewmate or secondmate on an unverified adapter.
-If `config/crew-harness` or `config/secondmate-harness` names one, tell the captain under `../../../AGENTS.md` section 9 that the requested worker runtime is not verified, use firstmate's own verified runtime for current work, and ask only whether to verify the requested runtime for future work.
-Do not pause current work for that choice.
+絕不使用未驗證介接器派發船員或二副。
+`config/crew-harness` 或 `config/secondmate-harness` 若指定未驗證介接器，依 `../../../AGENTS.md` 第 9 節告訴船長所要求的工作 Agent 執行環境尚未驗證，目前工作改用 firstmate 自身已驗證的執行環境，只詢問是否為未來工作驗證所要求的執行環境。
+不要為了這項選擇暫停目前工作。
 
-On `unknown`, ask the captain instead of guessing.
-A current captain override beats detection, while a per-task override governs only that dispatch.
-For recovery and control, use the exact `harness=` in `state/<id>.meta`; never infer it from a model or provider.
+結果為 `unknown` 時，詢問船長，不要猜測。
+當前船長覆寫優先於偵測；單次工作覆寫只約束該次派工。
+復原與控制使用 `state/<id>.meta` 中精確的 `harness=`；絕不從模型或供應商推測。
 
-Deliver lifecycle actions only through `../../../bin/fm-control.sh <task-id> interrupt|exit|relaunch`.
-Never type an interrupt key or exit command through `fm-send`, where routing-marked lifecycle text becomes chat.
-Trust handling is complete only when inspection proves the target started processing its instructions; delivery success alone is not proof.
-Muse, Gemini, Devin, Command Code, Polytoken, Cortex, Kiro, and Hermes are verified only for crewmate and scout work, never a secondmate or primary.
+生命週期動作只透過 `../../../bin/fm-control.sh <task-id> interrupt|exit|relaunch` 傳遞。
+絕不透過 `fm-send` 輸入中斷按鍵或結束指令，因為帶路由標記的生命週期文字會變成對話。
+只有檢查證明目標已開始處理指示，信任處理才算完成；傳遞成功本身不是證明。
+Muse、Gemini、Devin、Command Code、Polytoken、Cortex、Kiro 與 Hermes 只驗證用於船員與 scout，不能作為二副或主要執行環境。
 
-## Detection
+<a id="detection"></a>
+## 偵測
 
-`../../../bin/fm-harness.sh` prints firstmate's own harness from verified environment markers and process ancestry, and owns how they combine.
-A marker names its harness, but a structural ancestor of a different harness outranks it, because a marker is ordinary environment state a child or a multiplexer can retain while ancestry is what proves who owns the process tree.
-Only `FM_PI_HARNESS=pi-signed` at the launch boundary together with `PI_CODING_AGENT=true` selects Pi-signed; shared unmarked launcher ancestry remains Pi.
-omp publishes no marker of its own; `FM_OMP_HARNESS=omp` is Firstmate's launch marker and the anchored identity in `bin/fm-omp-process-lib.sh` (process name `omp`, or `bun` running the omp launcher) is its ancestry evidence, as `references/harness/omp.md` records.
-`../../../bin/fm-spawn.sh` owns worker marker establishment, while the README launch command owns the signed-primary boundary.
-`../../../bin/fm-harness.sh crew` resolves `config/crew-harness`, where absent or `default` means firstmate's own harness.
-[`docs/configuration.md`](../../../docs/configuration.md#choose-the-secondmate-harness) owns secondmate pin resolution, including per-mate overrides; [`bin/fm-harness.sh`](../../../bin/fm-harness.sh) owns the resolver commands.
-`../../../bin/fm-spawn.sh` re-resolves on every spawn, and an explicit per-spawn argument wins for that spawn.
-A new adapter's verified marker and command name must land in `../../../bin/fm-harness.sh`.
+`../../../bin/fm-harness.sh` 從已驗證環境標記與程序祖先鏈印出 firstmate 自身執行環境，並定義兩者如何組合。
+標記指出其執行環境，但不同執行環境的結構性祖先優先，因為標記只是子程序或多工器可能保留的一般環境狀態，祖先鏈才能證明誰擁有程序樹。
+只有啟動邊界的 `FM_PI_HARNESS=pi-signed` 搭配 `PI_CODING_AGENT=true`，才選擇 Pi-signed；共用且未標記的啟動器祖先鏈仍視為 Pi。
+omp 不發布自己的標記；`FM_OMP_HARNESS=omp` 是 Firstmate 的啟動標記，`bin/fm-omp-process-lib.sh` 中錨定的身分（程序名稱 `omp`，或由 `bun` 執行 omp 啟動器）是其祖先鏈證據，記錄於 `references/harness/omp.md`。
+工作 Agent 標記建立由 `../../../bin/fm-spawn.sh` 負責，簽章主要執行環境的邊界則以 README 啟動指令為準。
+`../../../bin/fm-harness.sh crew` 解析 `config/crew-harness`；缺少或 `default` 代表 firstmate 自身執行環境。
+二副固定選擇的解析，包括個別二副覆寫，以 [`docs/configuration.md`](../../../docs/configuration.md#choose-the-secondmate-harness) 為準；解析指令由 [`bin/fm-harness.sh`](../../../bin/fm-harness.sh) 定義。
+`../../../bin/fm-spawn.sh` 每次啟動都重新解析，明確的單次啟動參數對該次啟動優先。
+新介接器經驗證的標記與指令名稱，必須合併到 `../../../bin/fm-harness.sh`。
 
-## Operation-to-reference matrix
+<a id="operation-to-reference-matrix"></a>
+## 操作與參考對照矩陣
 
-Every emitted plan appends the selected or recorded harness reference after the named common references.
-The `harness-adapter-routing-v1` object is the machine-readable and human-visible selection contract: choose the operation, choose the scenario within it, then append the selected harness reference.
-`default` is the normal scenario when no narrower scenario applies.
-Kimi establishes its unsupported primary boundary in its selected harness reference; Muse and Gemini follow Non-negotiable safety above.
-A new tool remains undispatchable until the `verify` plan, its harness entry, every named owner, and the live checks land.
+每份輸出計畫，都在具名共用參考後面追加選定或已記錄的執行環境參考。
+`harness-adapter-routing-v1` 物件是機器可讀、人類可見的選擇契約：先選操作，再選其中情境，最後追加選定執行環境參考。
+沒有更精確情境適用時，使用一般情境 `default`。
+Kimi 在其執行環境參考中定義不支援主要執行環境的邊界；Muse 與 Gemini 遵循上方不可妥協安全規則。
+新工具必須等 `verify` 計畫、執行環境項目、每個具名負責元件及真實環境檢查都合併後，才能派工。
 
 ```json harness-adapter-routing-v1
 {

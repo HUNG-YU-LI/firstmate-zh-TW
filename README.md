@@ -1,9 +1,13 @@
+> **台灣繁體中文版**：此儲存庫是 [kunchenguid/firstmate](https://github.com/kunchenguid/firstmate) 的繁中 fork，文件與技能提示採台灣工程師慣用語。翻譯範圍、上游版本及保留原文的機器契約，請見 [翻譯說明](TRANSLATION.zh-TW.md)。
+>
+> 若要使用此繁中版本，請複製 `https://github.com/HUNG-YU-LI/firstmate-zh-TW.git`；原文上游的安裝命令仍保留供對照。
+
 <h1 align="center">firstmate</h1>
 <p align="center">
   <a
     href="https://img.shields.io/badge/platform-macOS%20%7C%20Linux-blue?style=flat-square"
     ><img
-      alt="Platform"
+      alt="支援平台"
       src="https://img.shields.io/badge/platform-macOS%20%7C%20Linux-blue?style=flat-square"
   /></a>
   <a href="https://x.com/kunchenguid"
@@ -18,68 +22,74 @@
   /></a>
 </p>
 
-<h3 align="center">Talk to one agent. Ship with a crew.</h3>
+<h3 align="center">只和一個 Agent 交談，由整支團隊完成交付。</h3>
 
 <p align="center">
-  <img alt="firstmate - talk to one agent, ship with a crew" src="assets/banner.png" width="100%" />
+  <img alt="firstmate — 只和一個 Agent 交談，由整支團隊完成交付" src="assets/banner.png" width="100%" />
 </p>
 
-## What it is
+<a id="what-it-is"></a>
+## 這是什麼
 
-You can run one coding agent easily.
-But the moment you want three project tasks done in parallel - fixes, investigations, plans, audits - you become a tab-juggler: babysitting sessions, copy-pasting context between repos, forgetting which terminal had the failing test.
+執行一個程式開發 Agent 很容易。
+但只要你想同時完成三項專案工作，例如修正、調查、規劃或稽核，就會變成忙著切換分頁的人：盯著各個工作階段、在儲存庫之間複製貼上上下文，還會忘記哪個終端機裡有失敗的測試。
 
-firstmate flips the model.
-You talk to a single agent - the first mate - and it runs the crew for you: spawning autonomous agents in a visible session backend, giving each a clean git worktree, supervising them to completion, and handing you finished PRs, approved local merges, or standalone investigation reports.
-For larger fleets, you can opt in to persistent secondmates: second mates that are still ordinary direct reports, but run from their own isolated firstmate homes on this machine or another SSH-reachable host.
+firstmate 翻轉了這種模式。
+你只需和一個 Agent，也就是大副（first mate）交談，它就會替你帶領整支團隊：在可見的工作階段後端啟動自主 Agent，給每個 Agent 一份乾淨的 Git worktree，監督它們完成工作，再把完成的 PR、經核准的本機合併或獨立調查報告交給你。
+船隊規模更大時，可以選擇啟用持續存在的二副（secondmate）：它們仍是一般的直接部屬，但各自在本機或可透過 SSH 連線的主機上，使用隔離的 firstmate home 執行。
 
-firstmate is not a model, not a harness, not a skill, not an MCP server, and not a CLI.
-firstmate is an agent distro for running a crew of agents.
-An agent distro is a portable directory of instructions, skills, tooling, policies, and state conventions that turns a general-purpose agent into a specialized one.
-There is no app to install: the cloned repo is the distro - `AGENTS.md`, bundled firstmate skills, and helper scripts that any terminal coding agent can follow.
-Launching a supported harness inside it for your primary session instantiates your first mate - and makes you the captain.
+firstmate 不是模型、執行環境、技能、MCP 伺服器，也不是 CLI。
+firstmate 是一套用來帶領 Agent 團隊的 Agent 發行套件。
+Agent 發行套件是一個可攜式目錄，包含指令、技能、工具、政策與狀態慣例，能把通用 Agent 轉成特定用途的 Agent。
+不需要安裝應用程式：複製下來的儲存庫就是發行套件，內含 `AGENTS.md`、隨附的 firstmate 技能，以及任何終端機程式開發 Agent 都能遵循的輔助指令碼。
+在這個目錄內啟動支援的執行環境作為主要工作階段，就建立了你的大副，而你就是船長。
 
-## Features
+<a id="features"></a>
+## 功能
 
-- **One liaison** - you talk only to the first mate; it dispatches, supervises, escalates only real decisions, and reports plain outcomes.
-- **A visible crew** - every crewmate works in its own tmux window or Herdr tab, or in an experimental Zellij tab, experimental cmux workspace, experimental Tern block, experimental Orca terminal, or experimental T3 Code thread you can watch or interact with; the first mate reconciles.
-- **Disposable worktrees** - each task runs in a clean [treehouse](https://github.com/kunchenguid/treehouse) git worktree, or an Orca-managed worktree when `backend=orca`, so parallel work on one repo never collides.
-- **Two task shapes** - ship tasks deliver authorized changes; scout tasks leave standalone investigation reports when the intake contract warrants separate research.
-- **Explicit project modes** - each project ships via `no-mistakes`, `direct-PR`, or `local-only`, with an optional `+yolo` merge-autonomy flag, an optional `branch=<prefix>` override for the default `fm/` ship-branch prefix, and an optional `forge=gerrit` binding under which the worker publishes a Gerrit change instead of opening a pull request, plus an optional `pr=manual` token under which the worker writes the PR title and body instead of the pipeline.
-- **Self-repo boundary** - a home runs as firstmate user/operator by default, so a firstmate bug is diagnosed and patched locally but never pushed, PRed, issued, commented, or forked upstream on its own; publishing to firstmate's own repository needs the `config/firstmate-role` maintainer opt-in or a per-task captain consent ([schema](docs/configuration.md#firstmate-role-configfirstmate-role)).
-- **Optional secondmates** - opt in to persistent second mates that run from isolated firstmate homes with their own `FM_HOME`, state, projects, and session lock, either locally or as a whole home on an SSH-reachable host, with guarded updates and recovery that never turns an unavailable remote route into a local replacement.
-- **Event-driven, zero-token supervision** - a bash watcher sleeps on the fleet and wakes the first mate only when something needs you; verified primary harnesses also get a turn-end backstop that blocks or follows up on a blind stop when work is under way and supervision is not live.
-- **Optional Relay** - opt in with one local `.env` pairing token so firstmate can answer your public mentions on X and Discord alike, act on normal reversible mention requests through the same lifecycle as chat requests, acknowledge spawned work, and post up to three public-safe completion follow-ups within seven days for genuine milestones and the final outcome without changing non-Relay behavior; a final reply promised in a thread becomes durable state that is reconciled from disk, so a restart or a compacted conversation cannot lose it; dry-run preview records would-be replies and dismissals locally before go-live.
-- **Strict project boundary** - the first mate is read-only over your projects except for the narrow guarded and captain-approved operations authorized by [hard rule 1](AGENTS.md#1-identity-and-prime-directives), including fleet sync's guarded safe branch pruning; crewmates make every other project change behind the configured merge authority.
-- **Restart-proof** - all state lives on disk and in the active session backend (see [backend selection](docs/configuration.md#backend-selection-order)); the next session reconciles after a restart, while ordinary supervision recovers confirmed-dead secondmate agents without waiting for one.
+- **單一聯絡窗口** — 你只和大副交談；它負責派工、監督，只在真正需要決策時向上呈報，並以易懂的方式回報成果。
+- **看得見的團隊** — 每位船員在自己的 tmux 視窗或 Herdr 分頁工作，也可以使用實驗性的 Zellij 分頁、cmux 工作區、Tern 區塊、Orca 終端機或 T3 Code 對話串；你能觀看或互動，大副會協調狀態。
+- **用完可清除的 worktree** — 每項工作都在乾淨的 [treehouse](https://github.com/kunchenguid/treehouse) Git worktree 中執行；`backend=orca` 時則使用 Orca 管理的 worktree，因此同一儲存庫的並行工作不會互相衝突。
+- **兩種工作類型** — ship 工作交付已授權的變更；當受理契約需要獨立研究時，scout 工作產出獨立調查報告。
+- **明確的專案模式** — 各專案透過 `no-mistakes`、`direct-PR` 或 `local-only` 交付；可選擇加入 `+yolo` 合併自主權旗標、以 `branch=<prefix>` 覆寫預設的 `fm/` 交付分支前綴、使用 `forge=gerrit` 綁定讓工作 Agent 發布 Gerrit change 而非建立 pull request，或加入 `pr=manual`，由工作 Agent 撰寫 PR 標題與內容，而不是交給管線。
+- **自身儲存庫邊界** — home 預設以 firstmate 使用者／操作者身分執行，因此 firstmate 的問題可以在本機診斷與修補，但不會自行向上游推送、建立 PR、開 Issue、留言或 fork；要發布到 firstmate 自己的儲存庫，必須在 `config/firstmate-role` 明確啟用維護者角色，或取得船長針對該工作的同意（[結構定義](docs/configuration.md#firstmate-role-configfirstmate-role)）。
+- **可選的二副** — 選擇啟用持續存在的二副，各自在隔離的 firstmate home 中執行，具有自己的 `FM_HOME`、狀態、專案與工作階段鎖；可在本機執行，也可將整個 home 放在可透過 SSH 存取的主機。更新與復原都有防護，遠端路由不可用時絕不擅自改成本機替代。
+- **事件驅動、零 Token 的監督** — Bash 監看程式平時等待船隊事件，只有需要你處理時才喚醒大副；經驗證的主要執行環境還有回合結束防護，在工作仍進行且監督未啟動時，阻擋或接續處理未確認狀態就停止的情況。
+- **可選的 Relay** — 透過本機 `.env` 中的一個配對權杖啟用，讓 firstmate 回覆 X 與 Discord 上公開提及你的訊息，使用和對話要求相同的生命週期處理一般可逆要求，確認已啟動的工作，並在七天內針對實際里程碑與最終成果，最多發布三則適合公開的後續回覆，且不改變非 Relay 的行為；若承諾在對話串中提供最終回覆，該承諾會成為可從磁碟對帳的持久化狀態，因此重新啟動或壓縮對話都不會遺失；正式啟用前，dry-run 預覽會先在本機記錄預計發送的回覆與略過項目。
+- **嚴格的專案邊界** — 除了[硬性規則 1](AGENTS.md#1-identity-and-prime-directives) 授權的少數受防護、經船長核准的操作，包括 fleet sync 受防護的安全分支清理，大副對你的專案一律唯讀；其他所有專案變更都由船員在設定好的合併授權之下執行。
+- **不怕重新啟動** — 所有狀態都存於磁碟與目前使用的工作階段後端（參見[後端選擇](docs/configuration.md#backend-selection-order)）；重新啟動後，下個工作階段會完成狀態對帳，而一般監督流程也會主動復原已確認終止的二副 Agent，不必等待重新啟動。
 
-Full detail on every feature lives in [docs/architecture.md](docs/architecture.md).
+各項功能的完整細節請見 [docs/architecture.md](docs/architecture.md)。
 
-## Quick Start
+<a id="quick-start"></a>
+## 快速開始
 
-### Requirements
+<a id="requirements"></a>
+### 需求
 
-- A verified primary agent harness: Claude Code, Grok, Pi, `pi-signed`, Oh My Pi (`omp`), Codex, OpenCode, Cursor Agent CLI, or Antigravity CLI (`agy`).
-- Git and the GitHub CLI, authenticated through `gh auth login`.
-- The CLI and dependencies for your selected runtime backend; tmux is the reference default.
+- 經驗證的主要 Agent 執行環境：Claude Code、Grok、Pi、`pi-signed`、Oh My Pi（`omp`）、Codex、OpenCode、Cursor Agent CLI 或 Antigravity CLI（`agy`）。
+- Git 與 GitHub CLI，並透過 `gh auth login` 完成驗證。
+- 所選執行階段後端的 CLI 與相依套件；tmux 是預設參考後端。
 
-The first mate detects supported missing or outdated tools and offers their install or upgrade after you approve.
-Backend-specific setup is linked in [Documentation](#documentation).
+大副會偵測支援範圍內缺少或過舊的工具，並在取得你的核准後提供安裝或升級。
+各後端專屬設定請見[文件](#documentation)中的連結。
 
-### Recommended harnesses
+<a id="recommended-harnesses"></a>
+### 建議的執行環境
 
-**Claude Code, Grok, and Pi are equal co-primary recommendations** for running the primary firstmate session, with `pi-signed` supported as Pi's distinct signed-wrapper identity.
-Claude Code uses tracked Stop and StopFailure hooks for [tokenless watcher re-arm and rewake](docs/watcher-continuity.md#claude-stop-hook), including API-error turn ends, Grok uses background-notify wake cycles, and Pi uses its tracked primary watcher extension.
-All three have verified turn-end guard paths when launched with their documented setup.
-Pick whichever one matches your subscription and workflow.
+執行 firstmate 主要工作階段時，**Claude Code、Grok 與 Pi 都是同等優先的建議選項**；`pi-signed` 也受支援，並以 Pi 獨立的簽章包裝器身分識別。
+Claude Code 使用納入版本控制的 Stop 與 StopFailure hook，提供[不耗 Token 的監看程式重新啟用與喚醒](docs/watcher-continuity.md#claude-stop-hook)，也涵蓋 API 錯誤造成的回合結束；Grok 使用背景通知喚醒週期；Pi 使用納入版本控制的主要監看擴充功能。
+依各自文件完成設定並啟動時，三者都有經過驗證的回合結束防護路徑。
+選擇最符合你訂閱與工作流程的工具即可。
 
-Oh My Pi (`omp`), a Pi fork, is verified as a primary with the same extension-owned watcher model as Pi and a stronger turn-end guard: its blocking `session_stop` hook compels a continuation instead of requesting one.
-Codex and OpenCode are also verified and supported as primary harnesses; Codex uses bounded foreground checkpoints unless a home opts in to its model-free native Stop park, and OpenCode uses a TUI plugin, so both carry more harness-specific supervision tradeoffs than the three co-primaries.
-Cursor Agent CLI is verified as a primary too, using a tracked project-scope `.cursor/hooks.json` whose `stop` hook parks on the watcher between turns, closest in shape to Claude Code's.
-Launch it with `--trust`, or none of its project hooks load; it also has no turn-end hook in headless `cursor-agent -p`, so run the primary session interactively.
-Antigravity CLI (`agy`) is verified as a primary too, using a tracked project-local `.agents/hooks.json` whose Stop hook parks on the watcher between turns like Cursor's.
+Oh My Pi（`omp`）是 Pi 的 fork，已驗證可作為主要執行環境；它採用與 Pi 相同、由擴充功能持有監看程式的模式，並提供更強的回合結束防護：阻擋式 `session_stop` hook 會強制繼續執行，而非只是提出請求。
+Codex 與 OpenCode 也已驗證並支援作為主要執行環境；Codex 預設使用有界的前景檢查點，除非 home 選擇啟用不需模型的原生 Stop 停駐機制；OpenCode 則使用 TUI 外掛，因此相較於三個同等優先選項，兩者有更多執行環境專屬的監督取捨。
+Cursor Agent CLI 也已驗證可作為主要執行環境，使用納入版本控制、以專案為範圍的 `.cursor/hooks.json`，其 `stop` hook 會在回合之間停駐於監看程式，形式最接近 Claude Code。
+啟動時必須加上 `--trust`，否則專案 hook 都不會載入；無介面的 `cursor-agent -p` 也沒有回合結束 hook，因此主要工作階段請使用互動模式。
+Antigravity CLI（`agy`）同樣已驗證可作為主要執行環境，使用納入版本控制、專案本機的 `.agents/hooks.json`，其 Stop hook 與 Cursor 一樣會在回合之間停駐於監看程式。
 
-### Install and launch
+<a id="install-and-launch"></a>
+### 安裝與啟動
 
 ```sh
 gh auth login
@@ -87,7 +97,7 @@ git clone https://github.com/kunchenguid/firstmate
 cd firstmate
 ```
 
-Then launch one of the co-primary harnesses; AGENTS.md takes over from there:
+接著啟動其中一個同等優先的執行環境；之後由 AGENTS.md 接手：
 
 **Claude Code**
 
@@ -105,7 +115,7 @@ grok --trust
 
 ```sh
 pi
-# or, when the signed wrapper is installed
+# 或者，已安裝簽章包裝器時
 FM_PI_HARNESS=pi-signed pi-signed
 ```
 
@@ -113,156 +123,165 @@ FM_PI_HARNESS=pi-signed pi-signed
 
 ```sh
 omp
-# or, when starting from inside a Claude Code pane
+# 或者，從 Claude Code 窗格內啟動時
 FM_OMP_HARNESS=omp omp
 ```
 
-Start `omp` with this checkout as its working directory: it auto-discovers the tracked `.omp/extensions/*.ts` files with no trust dialog, and naming them with `-e` as well would load each twice.
+請以這份 checkout 作為工作目錄啟動 `omp`：它會自動探索納入版本控制的 `.omp/extensions/*.ts`，且不顯示信任對話框；若又透過 `-e` 指定，會讓每個擴充功能載入兩次。
 
-For Grok, `--trust` is needed once per clone so project hooks and the turn-end guard load; `/hooks-trust` inside Grok works too.
-For Pi, approve the project trust prompt once per clone on first launch so the tracked `.pi/extensions/*.ts` files auto-load.
-The `/calm` toggle on Pi, and on Claude Code behind its default-off early-access function-hooks flag, hides supported transcript chrome, including canonically classified Firstmate operational user rows, and uses a Calm-only animated working boat during active runs while preserving all model context and session data.
-Calm changes only presentation, not the user-role delivery, ordering, authority, persistence, or exports of the operational inputs it hides.
-The preference persists for the effective Firstmate home, and toggling it off restores ordinary rendering.
-[Calm's current behavior and supported limits](docs/calm.md) are separate from its [version-scoped maintainer evidence](docs/calm-mode-feasibility.md).
-Pi's `/supervision-model` command pins a cheaper model and a shallower reasoning effort for the supervision branch alone, from the eligible models and thinking levels Pi itself reports, and with no pin the branch normally follows your own conversation's model and effort; see the [configuration schema](docs/configuration.md#pi-supervision-branch-model-and-effort-configsupervision-branch-model-configsupervision-branch-effort).
+Grok 每份 clone 都需要執行一次 `--trust`，專案 hook 與回合結束防護才會載入；也可在 Grok 內使用 `/hooks-trust`。
+Pi 每份 clone 首次啟動時，需要核准一次專案信任提示，才會自動載入納入版本控制的 `.pi/extensions/*.ts`。
+Pi 的 `/calm` 切換，以及 Claude Code 在預設關閉的搶先體驗 function-hooks 旗標下提供的同一功能，會隱藏支援的對話紀錄介面元素，包括依標準分類的 Firstmate 操作用戶訊息列；執行中會使用 Calm 專屬的動態工作船圖示，同時保留所有模型上下文與工作階段資料。
+Calm 只改變呈現方式，不改變被隱藏操作輸入的使用者角色傳遞、順序、權限、持久化或匯出行為。
+偏好會保留在實際生效的 Firstmate home 中，關閉後即可還原一般呈現。
+[Calm 目前的行為與支援限制](docs/calm.md)，和[依版本區分的維護者驗證證據](docs/calm-mode-feasibility.md) 分別記錄。
+Pi 的 `/supervision-model` 指令，可從 Pi 本身回報的合格模型與思考層級中，僅為監督分支固定較便宜的模型與較低的推理強度；未固定時，該分支通常沿用你目前對話的模型與強度。請見[設定結構定義](docs/configuration.md#pi-supervision-branch-model-and-effort-configsupervision-branch-model-configsupervision-branch-effort)。
 
-### Talk to it
+<a id="talk-to-it"></a>
+### 和它交談
 
 ```sh
-> ahoy! look at my github project xyz, then fix the flaky login test and add dark mode
+> ahoy！看看我的 GitHub 專案 xyz，接著修好不穩定的登入測試，並加入深色模式
 
-# firstmate checks its toolchain (asking your consent before installing or upgrading anything),
-# clones the project under projects/ and spawns two isolated workers in the active backend.
-# Minutes later:
+# firstmate 會檢查工具鏈（安裝或升級任何項目前都先取得你的同意），
+# 將專案複製到 projects/，並在目前後端啟動兩個隔離的工作 Agent。
+# 幾分鐘後：
 
-  PR ready for review, captain: https://github.com/you/xyz/pull/42
-  (fix flaky login test - risk: low - CI green)
+  船長，PR 已可供審查：https://github.com/you/xyz/pull/42
+  （修正不穩定的登入測試 — 風險：低 — CI 通過）
 
-> alright merge it
+> 好，把它合併
 ```
 
-### More backends
+<a id="more-backends"></a>
+### 更多後端
 
-Setup guides for tmux (the default) and every other supported backend (herdr, zellij, Orca, cmux, Paseo, Rex, T3 Code, tern, hc) are linked in [Documentation](#documentation) below.
+tmux（預設）與其他所有支援後端（herdr、zellij、Orca、cmux、Paseo、Rex、T3 Code、tern、hc）的設定指南，都列在下方[文件](#documentation)中。
 
-## How It Works
+<a id="how-it-works"></a>
+## 運作方式
 
 ```
-            you (the captain)
-                  │  chat: requests, decisions, "merge it"
+            你（船長）
+                  │  對話：要求、決策、「合併吧」
                   ▼
  ┌─────────────────────────────────────┐
- │ firstmate            (this repo)    │
- │ reads projects/ + firstmate routes  │
- │ writes guarded backlog/briefs/state │
+ │ firstmate            （本儲存庫）   │
+ │ 讀取 projects/ 與 firstmate 路由    │
+ │ 受防護地寫入 backlog／briefs／state │
  └──┬──────────────┬───────────────┬───┘
-    │ backend sends / status files │
+    │ 後端傳送／狀態檔案           │
     ▼              ▼               ▼
  ┌────────┐   ┌────────┐      ┌────────┐
- │fm-task1│   │fm-task2│  ... │fm-taskN│   one visible task endpoint each
- │crewmate│   │crewmate│      │crewmate│   one autonomous agent each
+ │fm-task1│   │fm-task2│  ... │fm-taskN│   每項工作各有可見端點
+ │ 船員   │   │ 船員   │      │ 船員   │   每個端點各有自主 Agent
  └───┬────┘   └───┬────┘      └───┬────┘
      ▼            ▼               ▼
-  treehouse worktree, Orca worktree, or isolated secondmate home
+  treehouse worktree、Orca worktree 或隔離的 secondmate home
      │
-     ├─ ship: project mode ► PR/local merge ► teardown
+     ├─ ship：專案模式 ► PR／本機合併 ► 清理
      │
-     └─ scout: report at data/<id>/report.md ► decision inventory ► relay findings ► teardown
+     └─ scout：data/<id>/report.md 報告 ► 決策清單 ► 轉達發現 ► 清理
 ```
 
-You chat with the first mate.
-It routes each request to a crewmate in its own session endpoint and git worktree, supervises the fleet with a zero-token event-driven watcher, and brings you finished PRs, approved local merges, or investigation reports.
-Optional secondmates extend this to persistent local or whole-home remote second mates, dispatch profiles let you steer which harness handles which task, and opt-in Relay lets the same fleet answer public mentions.
-`codex-app` is not a runtime backend yet; [docs/codex-app-backend.md](docs/codex-app-backend.md) owns the Codex App boundary.
+你和大副交談。
+它把每個要求交給具有獨立工作階段端點與 Git worktree 的船員，以零 Token、事件驅動的監看程式監督船隊，再把完成的 PR、經核准的本機合併或調查報告帶回給你。
+可選的二副將這套模式延伸到持續存在的本機或整個 home 部署於遠端的二副；派工設定檔讓你決定哪種執行環境處理哪項工作；選擇啟用的 Relay 則讓同一支船隊能回覆公開提及。
+`codex-app` 目前還不是執行階段後端；Codex App 的邊界以 [docs/codex-app-backend.md](docs/codex-app-backend.md) 為準。
 
-Full architecture - the supervision engine, worktree isolation, secondmates, dispatch profiles, project modes, optional Relay, fleet sync, and self-update - is in [docs/architecture.md](docs/architecture.md).
+完整架構，包括監督引擎、worktree 隔離、二副、派工設定檔、專案模式、可選的 Relay、船隊同步與自行更新，請見 [docs/architecture.md](docs/architecture.md)。
 
-## Built-in skills
+<a id="built-in-skills"></a>
+## 內建技能
 
-Firstmate ships these user-invocable built-in skills.
-Claude and grok use the slash form shown here; codex uses the same names with `$`, such as `$afk`.
+Firstmate 隨附以下可由使用者呼叫的內建技能。
+Claude 與 grok 使用此處的斜線形式；codex 使用相同名稱搭配 `$`，例如 `$afk`。
 
-| Skill              | What it does                                                                                                                                  |
-| ------------------ | -------------------------------------------------------------------------------------------------------------------------------------------- |
-| `/afk`             | Enter away-mode supervision: Pi's in-process branch, a [supervision host](docs/configuration.md#supervision-host-configsupervision-host) beside the other primaries (on by default for Claude), or the daemon handles wakes while you step away; see the [away procedure](.agents/skills/afk/SKILL.md) for the posture and return contract |
-| `/quiet`           | Keep routine wakes off main while staying and chatting; requested actions proceed now rather than waiting for your return. Where Pi's branch or an [attended supervision host](docs/supervision-host.md#quiet-mode) already does this, it only says so; otherwise it starts the quiet daemon, which stays active through ordinary chat until `/quiet off` |
-| `/ahoy`            | Recap visible session events since the prior real captain message plus visibly unanswered captain decisions, then guide the captain through any open decisions one at a time in agent-judged impact order; fall back to Bearings when invoked as the session's first real captain message |
-| `/bearings`        | Generate a concise four-section chat digest from bounded fleet state, including registered remote-home ledgers and measured follow-up for owned contributions; use `/bearings file` to also replace today's dated report in `data/`, and add `include PRs` for live GitHub enrichment |
-| `/lavish-url <url> [--mobile]` | Capture an http or https page without URL credentials, public or local, into an annotatable Lavish review snapshot with `[Fix Layout]`, `[Update Text]`, and `[Mobile Bug]` chips and project-aware element labels; add `--mobile` for mobile emulation. Feedback returns as a notification and is filed to the backlog of the registered project that owns the site, or surfaced for a decision when the site's project is not certain |
-| `/updatefirstmate` | Guardedly update the running firstmate and its secondmates - fast-forward, or reconcile a redundant post-squash-merge divergence - then persist and restart every live mate successfully left on the target commit - including already-current homes - with an honest re-read nudge only when restart cannot be proven |
-| `/stow`            | Sweep the session for uncaptured durable knowledge, persist the open work records this session knows are unfiled or now wrong, curate tiered startup memory with decay and cold archival, enforce each home's budget or surface the required decision, cascade to registered second mates, and report what is safe to reset |
+| 技能 | 功能 |
+| --- | --- |
+| `/afk` | 進入離席監督模式：你離開時，由 Pi 程序內的分支、其他主要執行環境旁的[監督主機](docs/configuration.md#supervision-host-configsupervision-host)（Claude 預設開啟），或背景常駐程序處理喚醒；模式與返回契約請見[離席程序](.agents/skills/afk/SKILL.md) |
+| `/quiet` | 你仍在場並繼續交談時，讓例行喚醒不出現在主對話；要求的操作立即執行，不等你返回。如果 Pi 分支或[有人在場的監督主機](docs/supervision-host.md#quiet-mode) 已提供此行為，就只回報這點；否則啟動 quiet 常駐程序，持續經過一般對話保持運作，直到 `/quiet off` |
+| `/ahoy` | 回顧上一則真正船長訊息以來可見的工作階段事件，以及可見但尚未回答的船長決策，再依 Agent 判斷的影響順序，逐一引導船長處理未結決策；若這是工作階段中的第一則真正船長訊息，則改用 Bearings |
+| `/bearings` | 根據有界的船隊狀態，在對話中產生簡潔的四節摘要，包含已登錄遠端 home 的帳本與所屬貢獻的實測追蹤；使用 `/bearings file` 可一併覆寫 `data/` 中今天日期的報告，加上 `include PRs` 則會取得即時 GitHub 補充資料 |
+| `/lavish-url <url> [--mobile]` | 將不含 URL 憑證的 http 或 https 網頁，不論公開或本機，擷取為可加註的 Lavish 審查快照，提供 `[Fix Layout]`、`[Update Text]`、`[Mobile Bug]` 標籤與能識別專案的元素標示；加上 `--mobile` 可模擬行動裝置。回饋以通知返回，並歸入擁有該網站之已登錄專案的待辦清單；若無法確定網站屬於哪個專案，則提出決策 |
+| `/updatefirstmate` | 在防護下更新目前執行的 firstmate 與二副：快轉，或處理 squash merge 後多餘的分歧；接著為所有成功停留在目標提交的運作中大副／二副保存狀態並重新啟動，包括本來就已是最新的 home。只有無法證明已重新啟動時，才如實要求重新讀取 |
+| `/stow` | 掃描工作階段中尚未記錄的持久知識，保存此階段已知尚未歸檔或已失準的未結工作紀錄，透過衰減與冷封存整理分層啟動記憶，落實各 home 的預算或提出必要決策，串接處理已登錄二副，並回報哪些部分可以安全重設 |
 
-Bearings invocation examples:
+Bearings 呼叫範例：
 
-- `/bearings` returns the fresh four-section digest in chat only.
-- Owned-contribution follow-up comes from the cached coverage projection; `include PRs` remains the opt-in for repository-wide live PR enrichment.
-- `/bearings include PRs` keeps chat-only mode and opts into live PR enrichment.
-- `/bearings file` replaces today's `data/status-report-<YYYY-MM-DD>.md` from scratch and links it from the four-section chat digest.
-- `/bearings file include PRs` combines the dated report with live PR enrichment.
+- `/bearings` 只在對話中回傳最新的四節摘要。
+- 所屬貢獻的後續追蹤來自快取的涵蓋範圍投影；若要取得整個儲存庫的即時 PR 補充資料，仍須選擇加入 `include PRs`。
+- `/bearings include PRs` 維持僅對話模式，並啟用即時 PR 補充資料。
+- `/bearings file` 會從頭產生並覆寫今天的 `data/status-report-<YYYY-MM-DD>.md`，並在四節對話摘要中附上連結。
+- `/bearings file include PRs` 結合附日期報告與即時 PR 補充資料。
 
-Agent-only reference skills live under `.agents/skills/` and are loaded by firstmate at the trigger points named in [`AGENTS.md`](AGENTS.md).
+僅供 Agent 使用的參考技能放在 `.agents/skills/`，由 firstmate 在 [`AGENTS.md`](AGENTS.md) 指定的觸發點載入。
 
-### Two-tier skill layout
+<a id="two-tier-skill-layout"></a>
+### 兩層技能配置
 
-Firstmate's skills live in two separate places with different audiences:
+Firstmate 的技能分別放在兩個位置，服務不同對象：
 
-- `.agents/skills/` - agent-loaded skills (this section's table, plus firstmate's agent-only reference skills). Every one of these assumes a live firstmate home and is meaningless, or actively misleading, installed anywhere else, so each carries `metadata.internal: true` in its frontmatter. That flag hides them from installer discovery (tools like the [skills.sh](https://skills.sh) `npx skills add` installer) without affecting how firstmate itself loads them - frontmatter metadata is inert to the agent's own skill loader.
-- `skills/` - public, installer-facing skills meant to be installed standalone into any project, independent of firstmate.
-  Each one is a self-contained skill with no dependency on firstmate's paths, tools, or vocabulary.
-  Today that is `skills/stow`, a generic session-knowledge-sweep skill that routes findings by explicit instruction first, then existing local conventions, then a private `.stow-notes.md` fallback, and curates tiered entries through decay, local archival, and user-approved on-demand offload proposals.
-  It intentionally shares no code with the firstmate-internal `.agents/skills/stow` it is named after, so the two can evolve independently.
+- `.agents/skills/` — 由 Agent 載入的技能，包括本節表格中的技能，以及 firstmate 僅供 Agent 使用的參考技能。每個技能都假設有一個運作中的 firstmate home；安裝到其他位置時，可能毫無意義，甚至造成誤導，因此各技能的 frontmatter 都帶有 `metadata.internal: true`。這個旗標會讓它們不出現在安裝工具的探索結果中，例如 [skills.sh](https://skills.sh) 的 `npx skills add` 安裝程式，但不影響 firstmate 自己載入；frontmatter 中繼資料不會改變 Agent 自身技能載入器的行為。
+- `skills/` — 面向安裝工具的公開技能，可獨立安裝到任何專案，不依賴 firstmate。
+  每個技能都自給自足，不依賴 firstmate 的路徑、工具或專用詞彙。
+  目前提供的是 `skills/stow`，一個通用的工作階段知識掃描技能：先依明確指示分流發現，再遵循既有本機慣例，最後才退回私人 `.stow-notes.md`；並透過衰減、本機封存及使用者核准的按需卸載提案，整理分層條目。
+  它刻意不與同名的 firstmate 內部 `.agents/skills/stow` 共用程式碼，讓兩者可以獨立演進。
 
-## Documentation
+<a id="documentation"></a>
+## 文件
 
-- [docs/architecture.md](docs/architecture.md) - maintainer architecture for the crew, supervision, worktrees, secondmates, and project modes.
-- [docs/configuration.md](docs/configuration.md) - environment variables, `FM_HOME`, runtime backend selection, optional Relay and its X and Discord setup steps, trusted external process-event adapter setup, the files you set, and harness support.
-- [docs/extension-bindings.md](docs/extension-bindings.md) - maintainer architecture for the narrow trusted external `process-event-adapter/1` package, binding, handshake, and evidence boundary.
-- [docs/remote-secondmates.md](docs/remote-secondmates.md) - current setup, routing, transfer, recovery, and safety behavior for whole-home remote second mates.
-- [docs/calm.md](docs/calm.md) - current `/calm` behavior on Pi and Claude Code and its supported presentation limits.
-- [docs/voice-relay.md](docs/voice-relay.md) - the optional spoken interface: setup on both machines, measured round-trip cost, what a spoken answer may read, and what this build does not do yet.
-- [docs/fleet-ledger.md](docs/fleet-ledger.md) - the opt-in activity ledger outside tools can read to follow a home's tasks, and its record contract.
-- [docs/wedge-alarm.md](docs/wedge-alarm.md) - configure the active alert for an away-mode escalation delivery that gets stuck.
-- [docs/usage-warner.md](docs/usage-warner.md) - configure the opt-in local threshold warner for Claude usage windows.
-- [docs/tmux-backend.md](docs/tmux-backend.md) - current setup and limits for the tmux reference backend.
-- [docs/herdr-backend.md](docs/herdr-backend.md) - current setup, CI coverage, safety boundaries, and limits for the Herdr backend.
-- [docs/zellij-backend.md](docs/zellij-backend.md) - current setup and limits for the experimental Zellij backend.
-- [docs/orca-backend.md](docs/orca-backend.md) - current setup and limits for the experimental Orca backend.
-- [docs/cmux-backend.md](docs/cmux-backend.md) - current setup, socket security, and limits for the experimental cmux backend.
-- [docs/paseo-backend.md](docs/paseo-backend.md) - current setup, terminal-name routing, and limits for the experimental Paseo backend.
-- [docs/rex-backend.md](docs/rex-backend.md) - current setup, auto-detection, block-id routing, the absence proof, and limits for the experimental Rex backend.
-- [docs/t3code-backend.md](docs/t3code-backend.md) - current setup, sign-in, and limits for the experimental T3 Code backend.
-- [docs/tern-backend.md](docs/tern-backend.md) - current setup, surfaces capture, native-state degradation, and limits for the experimental tern backend.
-- [docs/hc-backend.md](docs/hc-backend.md) - current setup, task labels, and limits for the experimental hc (herdr-core) backend.
-- [docs/codex-app-backend.md](docs/codex-app-backend.md) - the current blocked Codex App backend boundary and rollout contract.
-- [docs/verification/runtime-backends.md](docs/verification/runtime-backends.md) - active maintainer verification for runtime backend guarantees.
-- [docs/gerrit-forge-integration.md](docs/gerrit-forge-integration.md) - maintainer architecture for the forge axis: why change-shaped review is not a forge variant, the mode/forge/shape composition test, and where responsibility for forge mechanics sits.
-- [docs/external-review-forge.md](docs/external-review-forge.md) - maintainer architecture for `forge=external`, where a review tool uploads its own snapshot: the no-push invariant and its three layers, the personal backup remote, and the accepted residual.
-- [docs/gitlab-merge-watch.md](docs/gitlab-merge-watch.md) - maintainer verification for watching and merging GitLab merge requests on arbitrary instances.
-- [docs/gerrit-change-watch.md](docs/gerrit-change-watch.md) - maintainer verification for watching Gerrit changes read-only, and why the merge path refuses one.
-- [docs/forgejo-tea-integration.md](docs/forgejo-tea-integration.md) - maintainer verification for watching and merging Forgejo/Gitea pull requests via `tea`.
-- [docs/turnend-guard.md](docs/turnend-guard.md) - the primary session's current "no turn ends blind" backstop, scope, loop safety, and compatibility limits.
-- [docs/verification/supervision.md](docs/verification/supervision.md) - active maintainer verification for session-start, guard, continuity, and wedge integrations.
-- [docs/supervision-protocols/](docs/supervision-protocols/) - rendered primary-harness watcher protocols for Claude, Codex, OpenCode, Pi and `pi-signed`, omp, Grok, Cursor, and unknown harness fallback.
-- [docs/scripts.md](docs/scripts.md) - the `bin/` toolbelt reference.
-- [docs/documentation-audiences.md](docs/documentation-audiences.md) - documentation audiences and the machine-checked placement boundary.
-- [`AGENTS.md`](AGENTS.md) - the supervisor contract, role boundary, and routing index for conditional procedures.
-- [CONTRIBUTING.md](CONTRIBUTING.md) - how to contribute, including the dev/test commands.
+- [docs/architecture.md](docs/architecture.md) — 提供維護者的團隊、監督、worktree、二副與專案模式架構。
+- [docs/configuration.md](docs/configuration.md) — 環境變數、`FM_HOME`、執行階段後端選擇、可選的 Relay 與 X／Discord 設定步驟、受信任外部程序事件介接器設定、可設定的檔案，以及執行環境支援。
+- [docs/extension-bindings.md](docs/extension-bindings.md) — 提供維護者的受限、受信任外部 `process-event-adapter/1` 套件、綁定、交握與證據邊界架構。
+- [docs/remote-secondmates.md](docs/remote-secondmates.md) — 整個 home 部署於遠端之二副的目前設定、路由、傳輸、復原與安全行為。
+- [docs/calm.md](docs/calm.md) — Pi 與 Claude Code 上目前的 `/calm` 行為及支援的呈現限制。
+- [docs/voice-relay.md](docs/voice-relay.md) — 可選的語音介面：兩台機器的設定、實測往返成本、語音回答可讀取的範圍，以及此版本尚未提供的功能。
+- [docs/fleet-ledger.md](docs/fleet-ledger.md) — 可選的活動帳本，供外部工具讀取並追蹤 home 的工作，以及其紀錄契約。
+- [docs/wedge-alarm.md](docs/wedge-alarm.md) — 設定離席模式中向上呈報卡住時的主動警示。
+- [docs/usage-warner.md](docs/usage-warner.md) — 設定可選的 Claude 用量區間本機門檻警示。
+- [docs/tmux-backend.md](docs/tmux-backend.md) — tmux 參考後端的目前設定與限制。
+- [docs/herdr-backend.md](docs/herdr-backend.md) — Herdr 後端的目前設定、CI 涵蓋範圍、安全邊界與限制。
+- [docs/zellij-backend.md](docs/zellij-backend.md) — 實驗性 Zellij 後端的目前設定與限制。
+- [docs/orca-backend.md](docs/orca-backend.md) — 實驗性 Orca 後端的目前設定與限制。
+- [docs/cmux-backend.md](docs/cmux-backend.md) — 實驗性 cmux 後端的目前設定、socket 安全性與限制。
+- [docs/paseo-backend.md](docs/paseo-backend.md) — 實驗性 Paseo 後端的目前設定、終端機名稱路由與限制。
+- [docs/rex-backend.md](docs/rex-backend.md) — 實驗性 Rex 後端的目前設定、自動偵測、區塊 ID 路由、不存在證明與限制。
+- [docs/t3code-backend.md](docs/t3code-backend.md) — 實驗性 T3 Code 後端的目前設定、登入與限制。
+- [docs/tern-backend.md](docs/tern-backend.md) — 實驗性 tern 後端的目前設定、畫面擷取、原生狀態退化處理與限制。
+- [docs/hc-backend.md](docs/hc-backend.md) — 實驗性 hc（herdr-core）後端的目前設定、工作標籤與限制。
+- [docs/codex-app-backend.md](docs/codex-app-backend.md) — 目前受阻的 Codex App 後端邊界與推出契約。
+- [docs/verification/runtime-backends.md](docs/verification/runtime-backends.md) — 執行階段後端保證的現行維護者驗證。
+- [docs/gerrit-forge-integration.md](docs/gerrit-forge-integration.md) — 提供維護者的託管平台軸架構：為什麼以 change 為單位的審查不是單純的平台變體、mode／forge／shape 組合測試，以及平台機制的責任歸屬。
+- [docs/external-review-forge.md](docs/external-review-forge.md) — 提供維護者的 `forge=external` 架構，由審查工具自行上傳快照：禁止推送的不變條件與三層防護、個人備份 remote，以及接受的殘餘風險。
+- [docs/gitlab-merge-watch.md](docs/gitlab-merge-watch.md) — 在任意 GitLab 執行個體監看與合併 merge request 的維護者驗證。
+- [docs/gerrit-change-watch.md](docs/gerrit-change-watch.md) — 唯讀監看 Gerrit change 的維護者驗證，以及合併路徑拒絕處理它的原因。
+- [docs/forgejo-tea-integration.md](docs/forgejo-tea-integration.md) — 透過 `tea` 監看與合併 Forgejo／Gitea pull request 的維護者驗證。
+- [docs/turnend-guard.md](docs/turnend-guard.md) — 主要工作階段目前「不盲目結束回合」的防護、範圍、迴圈安全性與相容性限制。
+- [docs/verification/supervision.md](docs/verification/supervision.md) — 工作階段啟動、防護、連續性與卡住偵測整合的現行維護者驗證。
+- [docs/supervision-protocols/](docs/supervision-protocols/) — 已展開的主要執行環境監看協定，涵蓋 Claude、Codex、OpenCode、Pi 與 `pi-signed`、omp、Grok、Cursor，以及未知執行環境的替代路徑。
+- [docs/scripts.md](docs/scripts.md) — `bin/` 工具組參考。
+- [docs/documentation-audiences.md](docs/documentation-audiences.md) — 文件讀者分類與由機器檢查的放置邊界。
+- [`AGENTS.md`](AGENTS.md) — 監督者契約、角色邊界，以及依條件載入程序的路由索引。
+- [CONTRIBUTING.md](CONTRIBUTING.md) — 貢獻方式，包含開發與測試指令。
 
-## Contributing
+<a id="contributing"></a>
+## 參與貢獻
 
-Contributions are welcome - see [CONTRIBUTING.md](CONTRIBUTING.md) for the workflow, repo conventions, and how to run the tests.
+歡迎貢獻；工作流程、儲存庫慣例與測試執行方式請見 [CONTRIBUTING.md](CONTRIBUTING.md)。
 
-## License
+<a id="license"></a>
+## 授權
 
-MIT - see [LICENSE](LICENSE).
+MIT，請見 [LICENSE](LICENSE)。
 
-## Star History
+<a id="star-history"></a>
+## Star 歷史
 
 <a href="https://www.star-history.com/?repos=kunchenguid%2Ffirstmate&type=date&legend=top-left">
  <picture>
    <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/chart?repos=kunchenguid/firstmate&type=date&theme=dark&legend=top-left" />
    <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/chart?repos=kunchenguid/firstmate&type=date&legend=top-left" />
-   <img alt="Star History Chart" src="https://api.star-history.com/chart?repos=kunchenguid/firstmate&type=date&legend=top-left" />
+   <img alt="Star 歷史圖表" src="https://api.star-history.com/chart?repos=kunchenguid/firstmate&type=date&legend=top-left" />
  </picture>
 </a>

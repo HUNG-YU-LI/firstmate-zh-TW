@@ -692,6 +692,14 @@
     {
       "path": ".agents/skills/validation-supervision/SKILL.md",
       "audience": "agent-runtime"
+    },
+    {
+      "path": "CLAUDE.zh-TW.md",
+      "audience": "public-product"
+    },
+    {
+      "path": "TRANSLATION.zh-TW.md",
+      "audience": "public-product"
     }
   ]
 }
